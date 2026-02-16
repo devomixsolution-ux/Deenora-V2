@@ -1,46 +1,185 @@
 
--- ১. রিসেন্ট কল টেবিল তৈরি (যদি না থাকে)
+-- ১. এক্সটেনশন এনাবল করা (UUID জেনারেশনের জন্য)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ২. মাদরাসা (Madrasahs) টেবিল
+CREATE TABLE IF NOT EXISTS public.madrasahs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    phone TEXT,
+    logo_url TEXT,
+    is_active BOOLEAN DEFAULT true,
+    is_super_admin BOOLEAN DEFAULT false,
+    login_code TEXT,
+    email TEXT UNIQUE,
+    sms_balance INTEGER DEFAULT 0,
+    reve_api_key TEXT,
+    reve_secret_key TEXT,
+    reve_caller_id TEXT,
+    reve_client_id TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- ৩. ক্লাস (Classes) টেবিল
+CREATE TABLE IF NOT EXISTS public.classes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    madrasah_id UUID REFERENCES public.madrasahs(id) ON DELETE CASCADE,
+    class_name TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- ৪. ছাত্র (Students) টেবিল
+CREATE TABLE IF NOT EXISTS public.students (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    madrasah_id UUID REFERENCES public.madrasahs(id) ON DELETE CASCADE,
+    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+    student_name TEXT NOT NULL,
+    roll INTEGER,
+    guardian_name TEXT,
+    guardian_phone TEXT NOT NULL,
+    guardian_phone_2 TEXT,
+    photo_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(class_id, roll)
+);
+
+-- ৫. শিক্ষক (Teachers) টেবিল
+CREATE TABLE IF NOT EXISTS public.teachers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    madrasah_id UUID REFERENCES public.madrasahs(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT UNIQUE NOT NULL,
+    login_code TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    permissions JSONB DEFAULT '{"can_manage_students": true, "can_manage_classes": false, "can_send_sms": false, "can_send_free_sms": true}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- ৬. কল হিস্ট্রি (Recent Calls)
 CREATE TABLE IF NOT EXISTS public.recent_calls (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     madrasah_id UUID REFERENCES public.madrasahs(id) ON DELETE CASCADE,
     student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
     called_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- ২. রিসেন্ট কল (Recent Calls) টেবিলের জন্য পলিসি
-ALTER TABLE public.recent_calls ENABLE ROW LEVEL SECURITY;
+-- ৭. এসএমএস টেমপ্লেট (SMS Templates)
+CREATE TABLE IF NOT EXISTS public.sms_templates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    madrasah_id UUID REFERENCES public.madrasahs(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
-DROP POLICY IF EXISTS "Allow anyone to read recent calls" ON public.recent_calls;
-CREATE POLICY "Allow anyone to read recent calls" ON public.recent_calls
-    FOR SELECT TO anon, authenticated
-    USING (true);
+-- ৮. লেনদেন (Transactions)
+CREATE TABLE IF NOT EXISTS public.transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    madrasah_id UUID REFERENCES public.madrasahs(id) ON DELETE CASCADE,
+    amount INTEGER NOT NULL,
+    transaction_id TEXT UNIQUE NOT NULL,
+    sender_phone TEXT,
+    description TEXT,
+    type TEXT CHECK (type IN ('credit', 'debit')),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
-DROP POLICY IF EXISTS "Allow anyone to insert recent calls" ON public.recent_calls;
-CREATE POLICY "Allow anyone to insert recent calls" ON public.recent_calls
-    FOR INSERT TO anon, authenticated
-    WITH CHECK (true);
+-- ৯. সিস্টেম সেটিংস (System Settings)
+CREATE TABLE IF NOT EXISTS public.system_settings (
+    id UUID PRIMARY KEY DEFAULT '00000000-0000-0000-0000-000000000001',
+    reve_api_key TEXT,
+    reve_secret_key TEXT,
+    reve_caller_id TEXT,
+    reve_client_id TEXT,
+    bkash_number TEXT,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
 
--- ৩. স্টুডেন্ট (Students) টেবিলের জন্য রিড পলিসি (হিস্ট্রি দেখানোর জন্য জরুরি)
-ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+-- ১০. অ্যাডমিন এসএমএস স্টক (Admin SMS Stock)
+CREATE TABLE IF NOT EXISTS public.admin_sms_stock (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    remaining_sms INTEGER DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
 
-DROP POLICY IF EXISTS "Allow anyone to read students" ON public.students;
-CREATE POLICY "Allow anyone to read students" ON public.students
-    FOR SELECT TO anon, authenticated
-    USING (true);
+-- ১১. আরএলএস পলিসি (Row Level Security)
+ALTER TABLE public.madrasahs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access madrasahs" ON public.madrasahs FOR ALL USING (true);
 
--- ৪. ক্লাস (Classes) টেবিলের জন্য রিড পলিসি
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access classes" ON public.classes FOR ALL USING (true);
 
-DROP POLICY IF EXISTS "Allow anyone to read classes" ON public.classes;
-CREATE POLICY "Allow anyone to read classes" ON public.classes
-    FOR SELECT TO anon, authenticated
-    USING (true);
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access students" ON public.students FOR ALL USING (true);
 
--- ৫. ট্রানজ্যাকশন ও অন্যান্য
+ALTER TABLE public.teachers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access teachers" ON public.teachers FOR ALL USING (true);
+
+ALTER TABLE public.recent_calls ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access recent_calls" ON public.recent_calls FOR ALL USING (true);
+
+ALTER TABLE public.sms_templates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access sms_templates" ON public.sms_templates FOR ALL USING (true);
+
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access transactions" ON public.transactions FOR ALL USING (true);
 
-DROP POLICY IF EXISTS "Allow users to insert transaction requests" ON public.transactions;
-CREATE POLICY "Allow users to insert transaction requests" ON public.transactions FOR INSERT TO anon, authenticated WITH CHECK (true);
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access system_settings" ON public.system_settings FOR ALL USING (true);
 
-DROP POLICY IF EXISTS "Allow users to read own transactions" ON public.transactions;
-CREATE POLICY "Allow users to read own transactions" ON public.transactions FOR SELECT TO anon, authenticated USING (true);
+ALTER TABLE public.admin_sms_stock ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to access admin_sms_stock" ON public.admin_sms_stock FOR ALL USING (true);
+
+-- ১২. ফাংশন: বাল্ক এসএমএস ব্যালেন্স আপডেট (RPC)
+CREATE OR REPLACE FUNCTION public.send_bulk_sms_rpc(
+    p_madrasah_id UUID,
+    p_student_ids UUID[],
+    p_message TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_count INTEGER;
+    v_current_balance INTEGER;
+BEGIN
+    v_count := array_length(p_student_ids, 1);
+    SELECT sms_balance INTO v_current_balance FROM public.madrasahs WHERE id = p_madrasah_id;
+    IF v_current_balance < v_count THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Insufficient balance');
+    END IF;
+    UPDATE public.madrasahs SET sms_balance = sms_balance - v_count WHERE id = p_madrasah_id;
+    RETURN jsonb_build_object('success', true, 'new_balance', v_current_balance - v_count);
+END;
+$$;
+
+-- ১৩. ফাংশন: পেমেন্ট অ্যাপ্রুভ এবং এসএমএস ক্রেডিট করা (RPC)
+CREATE OR REPLACE FUNCTION public.approve_payment_with_sms(
+    t_id UUID,
+    m_id UUID,
+    sms_to_give INTEGER
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    UPDATE public.transactions SET status = 'approved' WHERE id = t_id;
+    UPDATE public.madrasahs SET sms_balance = sms_balance + sms_to_give WHERE id = m_id;
+    UPDATE public.admin_sms_stock SET remaining_sms = remaining_sms - sms_to_give;
+    RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+-- ১৪. ডেটা ইনসার্ট (System Settings)
+INSERT INTO public.system_settings (id, reve_api_key, reve_secret_key, reve_caller_id, bkash_number)
+VALUES ('00000000-0000-0000-0000-000000000001', 'aa407e1c6629da8e', '91051e7e', 'Deenora', '০১৭৬৬-XXXXXX')
+ON CONFLICT (id) DO NOTHING;
+
+-- ১৫. সুপার অ্যাডমিন ইনসার্ট (Deenora-v2 Special)
+-- দ্রষ্টব্য: এই ID টি সুপাবেস অথ (Auth) ইউজারের সাথে মিল থাকতে হবে।
+INSERT INTO public.madrasahs (id, name, email, is_super_admin, is_active, login_code)
+VALUES ('fe678ac3-da4b-4b41-8688-b04aceb71959', 'Deenora Super Admin', 'kmibrahim@gmail.com', true, true, '269596')
+ON CONFLICT (id) DO UPDATE SET is_super_admin = true, login_code = '269596';
