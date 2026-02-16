@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Plus, Search, CheckCircle2, MessageSquare, X, BookOpen, ChevronDown, Check, PhoneCall, Smartphone, Loader2, ListChecks, MessageCircle, Phone } from 'lucide-react';
+import { ArrowLeft, Plus, Search, CheckCircle2, MessageSquare, X, BookOpen, ChevronDown, Check, PhoneCall, Smartphone, Loader2, ListChecks, MessageCircle, Phone, AlertCircle } from 'lucide-react';
 import { supabase, offlineApi, smsApi } from '../supabase';
 import { Class, Student, Language, Teacher } from '../types';
 import { t } from '../translations';
@@ -34,6 +34,12 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [sending, setSending] = useState(false);
+  const [statusModal, setStatusModal] = useState<{show: boolean, type: 'success' | 'error', title: string, message: string}>({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
 
   useEffect(() => {
     fetchStudents();
@@ -124,11 +130,21 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
     try {
       const selectedStudents = students.filter(s => selectedIds.has(s.id));
       await smsApi.sendBulk(madrasahId, selectedStudents, selectedTemplate.body);
-      alert(t('sms_success', lang));
+      setStatusModal({
+        show: true,
+        type: 'success',
+        title: lang === 'bn' ? 'সাফল্য' : 'Success',
+        message: t('sms_success', lang)
+      });
       setIsSelectionMode(false);
       setSelectedIds(new Set());
     } catch (err: any) {
-      alert(t('login_error', lang) + ': ' + err.message);
+      setStatusModal({
+        show: true,
+        type: 'error',
+        title: lang === 'bn' ? 'ব্যর্থ' : 'Failed',
+        message: err.message
+      });
     } finally { setSending(false); }
   };
 
@@ -281,6 +297,26 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
               <div className="w-1.5 h-1.5 rounded-full bg-[#8D30F4] animate-pulse"></div>
               <p className="text-[10px] font-black text-[#8D30F4] uppercase tracking-[0.2em]">{selectedIds.size} {t('selected', lang)}</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Status Modal */}
+      {statusModal.show && (
+        <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-center justify-center p-8 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[4rem] p-12 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+             <div className={`w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-10 transition-transform duration-700 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 'bg-red-50 text-red-500 border-red-100'} border-4 shadow-inner`}>
+                {statusModal.type === 'success' ? <CheckCircle2 size={64} strokeWidth={2.5} /> : <AlertCircle size={64} strokeWidth={2.5} />}
+             </div>
+             <h3 className="text-[26px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{statusModal.title}</h3>
+             <p className="text-[14px] font-bold text-slate-400 mt-4 font-noto px-4 leading-relaxed">{statusModal.message}</p>
+             
+             <button 
+                onClick={() => setStatusModal({ ...statusModal, show: false })} 
+                className={`w-full mt-10 py-5 font-black rounded-full text-sm uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-500 text-white shadow-red-100'}`}
+             >
+                {lang === 'bn' ? 'ঠিক আছে' : 'Continue'}
+             </button>
           </div>
         </div>
       )}

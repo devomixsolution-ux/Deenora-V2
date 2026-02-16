@@ -9,8 +9,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,
-    storage: window.localStorage
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+    storageKey: 'madrasah_auth_token'
   }
 });
 
@@ -80,7 +81,6 @@ export const smsApi = {
     const apiKey = (mData.reve_api_key && mData.reve_api_key.trim() !== '') ? mData.reve_api_key : global.reve_api_key;
     const secretKey = (mData.reve_secret_key && mData.reve_secret_key.trim() !== '') ? mData.reve_secret_key : global.reve_secret_key;
     const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id : global.reve_caller_id;
-    // client_id support can be added to URL params if required by REVE SMS version
     const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id : global.reve_client_id;
 
     const phoneList = students.map(s => {
@@ -96,7 +96,6 @@ export const smsApi = {
 
     let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&content=${encodeURIComponent(JSON.stringify(contentArray))}`;
     
-    // Add clientid if provided
     if (clientId) {
       apiUrl += `&clientid=${clientId}`;
     }

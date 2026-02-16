@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle, GraduationCap, ChevronLeft, ArrowRight, LayoutDashboard, Settings2, X, Sparkles, Box, ShieldAlert, Award, CheckCircle2 } from 'lucide-react';
+import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle, GraduationCap, ChevronLeft, ArrowRight, LayoutDashboard, Settings2, X, Sparkles, Box, ShieldAlert, Award, CheckCircle2, Lock } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, View } from '../types';
 import { t } from '../translations';
@@ -21,7 +21,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
   const [saving, setSaving] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingGlobal, setIsEditingGlobal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState({ show: false, title: '', message: '' });
   
   const [stats, setStats] = useState({ students: 0, classes: 0, teachers: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
@@ -134,7 +134,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         reve_caller_id: reveCallerId.trim()
       } : null);
 
-      setShowSuccessModal(true);
+      setShowSuccessModal({ show: true, title: t('success', lang), message: 'Profile updated successfully' });
     } catch (err: any) { 
       alert(t('login_error', lang) + ': ' + err.message);
     } finally { setSaving(false); }
@@ -152,8 +152,12 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
       }).eq('id', '00000000-0000-0000-0000-000000000001');
 
       if (error) throw error;
-      alert('Global System Settings Updated!');
       setIsEditingGlobal(false);
+      setShowSuccessModal({ 
+        show: true, 
+        title: lang === 'bn' ? 'সিস্টেম আপডেট' : 'System Updated', 
+        message: lang === 'bn' ? 'কোর সিস্টেম সেটিংস সফলভাবে আপডেট হয়েছে।' : 'Global system settings have been updated.' 
+      });
       fetchGlobalSettings();
     } catch (err: any) {
       alert('Error updating global settings: ' + err.message);
@@ -232,7 +236,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-36 relative z-10">
       
-      {/* Super Admin Control Hub */}
+      {/* Super Admin Control Hub Dashboard Card */}
       {isSuperAdmin && (
         <div className="bg-[#1A0B2E] p-8 rounded-[3.5rem] border border-white/10 shadow-2xl space-y-8 relative overflow-hidden group">
            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:rotate-12 transition-transform duration-1000">
@@ -250,74 +254,47 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                  </div>
               </div>
               <button 
-                onClick={() => setIsEditingGlobal(!isEditingGlobal)} 
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all shadow-lg border border-white/10 ${isEditingGlobal ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                onClick={() => setIsEditingGlobal(true)} 
+                className="w-11 h-11 bg-white/10 text-white rounded-2xl flex items-center justify-center transition-all shadow-lg border border-white/10 hover:bg-[#8D30F4] hover:border-[#8D30F4]/30"
               >
-                {isEditingGlobal ? <X size={20} /> : <Settings2 size={20} />}
+                <Settings2 size={20} />
               </button>
            </div>
            
-           {isEditingGlobal ? (
-              <div className="space-y-6 animate-in slide-in-from-top-4 duration-500 relative z-10">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 focus-within:border-[#8D30F4]/50 transition-all shadow-inner">
-                       <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block mb-2.5">Global API Gateway</label>
-                       <input type="text" className="bg-transparent border-none outline-none font-black text-white text-sm w-full placeholder:text-white/20" value={globalSettings.reve_api_key} onChange={(e) => setGlobalSettings({...globalSettings, reve_api_key: e.target.value})} placeholder="Enter Key..." />
-                    </div>
-                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 focus-within:border-[#8D30F4]/50 transition-all shadow-inner">
-                       <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block mb-2.5">Global Secret Key</label>
-                       <input type="text" className="bg-transparent border-none outline-none font-black text-white text-sm w-full placeholder:text-white/20" value={globalSettings.reve_secret_key} onChange={(e) => setGlobalSettings({...globalSettings, reve_secret_key: e.target.value})} placeholder="Enter Secret..." />
-                    </div>
-                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 focus-within:border-[#8D30F4]/50 transition-all shadow-inner">
-                       <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block mb-2.5">Global Sender ID</label>
-                       <input type="text" className="bg-transparent border-none outline-none font-black text-white text-sm w-full placeholder:text-white/20" value={globalSettings.reve_caller_id} onChange={(e) => setGlobalSettings({...globalSettings, reve_caller_id: e.target.value})} placeholder="e.g. 12345" />
-                    </div>
-                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 focus-within:border-[#8D30F4]/50 transition-all shadow-inner">
-                       <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block mb-2.5">Payment Number (bKash)</label>
-                       <input type="text" className="bg-transparent border-none outline-none font-black text-white text-sm w-full placeholder:text-white/20" value={globalSettings.bkash_number} onChange={(e) => setGlobalSettings({...globalSettings, bkash_number: e.target.value})} placeholder="e.g. 01766-XXXXXX" />
-                    </div>
+           <div className="flex gap-4 relative z-10 flex-wrap">
+              <div className="flex-1 min-w-[140px] bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors">
+                 <div className="w-12 h-12 bg-green-500/20 text-green-400 rounded-2xl flex items-center justify-center">
+                    <Activity size={22} />
                  </div>
-                 <button onClick={handleSaveGlobalSettings} disabled={saving} className="w-full py-5 bg-[#8D30F4] text-white font-black rounded-3xl text-sm shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/10">
-                    {saving ? <Loader2 className="animate-spin" size={20} /> : <><Save size={20} /> Update Global System</>}
-                 </button>
-              </div>
-           ) : (
-              <div className="flex gap-4 relative z-10 flex-wrap">
-                 <div className="flex-1 min-w-[140px] bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors">
-                    <div className="w-12 h-12 bg-green-500/20 text-green-400 rounded-2xl flex items-center justify-center">
-                       <Activity size={22} />
-                    </div>
-                    <div>
-                       <p className="text-[8px] font-black text-[#A179FF] uppercase tracking-widest">Network</p>
-                       <p className="text-sm font-black text-white">Active</p>
-                    </div>
-                 </div>
-                 <div className="flex-1 min-w-[140px] bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors">
-                    <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center">
-                       <CreditCard size={22} />
-                    </div>
-                    <div>
-                       <p className="text-[8px] font-black text-[#A179FF] uppercase tracking-widest">Payment</p>
-                       <p className="text-sm font-black text-white truncate max-w-[80px]">{globalSettings.bkash_number || 'N/A'}</p>
-                    </div>
-                 </div>
-                 <div className="flex-1 min-w-[140px] bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors">
-                    <div className="w-12 h-12 bg-[#8D30F4]/20 text-[#A179FF] rounded-2xl flex items-center justify-center">
-                       <MessageSquare size={22} />
-                    </div>
-                    <div>
-                       <p className="text-[8px] font-black text-[#A179FF] uppercase tracking-widest">Core ID</p>
-                       <p className="text-sm font-black text-white">{globalSettings.reve_caller_id || 'Deenora'}</p>
-                    </div>
+                 <div>
+                    <p className="text-[8px] font-black text-[#A179FF] uppercase tracking-widest">Network</p>
+                    <p className="text-sm font-black text-white">Active</p>
                  </div>
               </div>
-           )}
+              <div className="flex-1 min-w-[140px] bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors">
+                 <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center">
+                    <CreditCard size={22} />
+                 </div>
+                 <div>
+                    <p className="text-[8px] font-black text-[#A179FF] uppercase tracking-widest">Payment</p>
+                    <p className="text-sm font-black text-white truncate max-w-[80px]">{globalSettings.bkash_number || 'N/A'}</p>
+                 </div>
+              </div>
+              <div className="flex-1 min-w-[140px] bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors">
+                 <div className="w-12 h-12 bg-[#8D30F4]/20 text-[#A179FF] rounded-2xl flex items-center justify-center">
+                    <MessageSquare size={22} />
+                 </div>
+                 <div>
+                    <p className="text-[8px] font-black text-[#A179FF] uppercase tracking-widest">Core ID</p>
+                    <p className="text-sm font-black text-white">{globalSettings.reve_caller_id || 'Deenora'}</p>
+                 </div>
+              </div>
+           </div>
         </div>
       )}
 
       {/* Profile Identity Card Section */}
       <div className="relative pt-20 px-1">
-        {/* FIXED: Ensure relative position and adequate padding for absolute logo */}
         <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
           
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-20">
@@ -352,7 +329,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                   {madrasah.name}
                 </h2>
                 
-                {/* Sender ID Display Section */}
                 <div className="flex flex-col items-center gap-2">
                    <div className="inline-flex px-6 py-2 bg-[#F2EBFF] text-[#8D30F4] rounded-2xl border border-[#8D30F4]/10 shadow-sm">
                       <div className="flex items-center gap-2.5">
@@ -473,7 +449,86 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </button>
       </div>
 
-      {/* Edit Profile Modal - High z-index to cover navigation */}
+      {/* System Core Modal - Premium Design */}
+      {isEditingGlobal && (
+        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-3xl z-[9001] flex items-center justify-center p-6 animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-[0_50px_120px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-500 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+              
+              <div className="p-10 pb-4 shrink-0 flex items-center justify-between">
+                 <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-[#1A0B2E] text-white rounded-[1.5rem] flex items-center justify-center shadow-xl border border-white/10">
+                       <Shield size={28} className="text-[#A179FF]" />
+                    </div>
+                    <div>
+                       <h3 className="text-2xl font-black text-[#2E0B5E] font-noto tracking-tight">System Core</h3>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                          <Lock size={10} className="text-[#8D30F4]" /> Secure Global Settings
+                       </p>
+                    </div>
+                 </div>
+                 <button onClick={() => setIsEditingGlobal(false)} className="w-10 h-10 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center active:scale-90 transition-all"><X size={24} /></button>
+              </div>
+
+              <div className="px-10 pb-10 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                 <div className="bg-[#F2EBFF]/50 p-6 rounded-[2rem] border border-[#8D30F4]/5 space-y-5">
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-[#8D30F4] uppercase tracking-widest block px-1">Global SMS Gateway</label>
+                       <input 
+                         type="text" 
+                         className="w-full h-14 bg-white border border-slate-100 rounded-2xl px-5 font-black text-slate-800 text-xs shadow-inner outline-none focus:border-[#8D30F4]/30" 
+                         value={globalSettings.reve_api_key} 
+                         onChange={(e) => setGlobalSettings({...globalSettings, reve_api_key: e.target.value})} 
+                         placeholder="Enter Master API Key" 
+                       />
+                    </div>
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-[#8D30F4] uppercase tracking-widest block px-1">Secret Access Token</label>
+                       <input 
+                         type="text" 
+                         className="w-full h-14 bg-white border border-slate-100 rounded-2xl px-5 font-black text-slate-800 text-xs shadow-inner outline-none focus:border-[#8D30F4]/30" 
+                         value={globalSettings.reve_secret_key} 
+                         onChange={(e) => setGlobalSettings({...globalSettings, reve_secret_key: e.target.value})} 
+                         placeholder="Enter Master Secret" 
+                       />
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-1 gap-5">
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">Global Sender Identity</label>
+                       <input 
+                         type="text" 
+                         className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-5 font-black text-[#2E0B5E] text-base outline-none focus:border-[#8D30F4]/30" 
+                         value={globalSettings.reve_caller_id} 
+                         onChange={(e) => setGlobalSettings({...globalSettings, reve_caller_id: e.target.value})} 
+                         placeholder="e.g. Deenora" 
+                       />
+                    </div>
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">System bKash Number</label>
+                       <input 
+                         type="text" 
+                         className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-5 font-black text-[#2E0B5E] text-base outline-none focus:border-[#8D30F4]/30" 
+                         value={globalSettings.bkash_number} 
+                         onChange={(e) => setGlobalSettings({...globalSettings, bkash_number: e.target.value})} 
+                         placeholder="01766-XXXXXX" 
+                       />
+                    </div>
+                 </div>
+
+                 <button 
+                   onClick={handleSaveGlobalSettings} 
+                   disabled={saving} 
+                   className="w-full h-16 premium-btn text-white font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 text-lg border border-white/20"
+                 >
+                    {saving ? <Loader2 className="animate-spin" size={24} /> : <><Save size={22} /> Commit System Changes</>}
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal */}
       {isEditingProfile && (
         <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-center justify-center p-4">
            <div className="bg-white w-full max-w-sm rounded-[4rem] p-8 shadow-2xl space-y-8 animate-in zoom-in-95 duration-500 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -515,21 +570,25 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>
       )}
 
-      {/* Success Modal - Highest z-index */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-[#080A12]/60 backdrop-blur-2xl z-[9999] flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_40px_100px_rgba(141,48,244,0.3)] border border-[#8D30F4]/10 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
-             <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-green-100">
-                <CheckCircle2 size={56} strokeWidth={2.5} />
+      {/* Premium Success Status Modal */}
+      {showSuccessModal.show && (
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-[#080A12]/60 backdrop-blur-3xl z-[9999] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-sm rounded-[4rem] p-12 text-center shadow-[0_40px_100px_rgba(141,48,244,0.3)] border border-[#8D30F4]/10 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+             <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner border border-green-100 transition-transform duration-700">
+                <CheckCircle2 size={64} strokeWidth={2.5} />
              </div>
-             <h3 className="text-xl font-black text-slate-800 font-noto tracking-tight">{t('success', lang)}</h3>
-             <p className="text-[10px] font-bold text-slate-400 mt-3 uppercase tracking-[0.2em] font-noto">Profile updated successfully</p>
+             <h3 className="text-[26px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{showSuccessModal.title}</h3>
+             <p className="text-[14px] font-bold text-slate-400 mt-4 font-noto px-4 leading-relaxed">{showSuccessModal.message}</p>
              <button 
-               onClick={() => setShowSuccessModal(false)} 
-               className="w-full mt-8 py-4 premium-btn text-white font-black rounded-full shadow-xl active:scale-95 transition-all text-sm uppercase tracking-widest"
+               onClick={() => setShowSuccessModal({ ...showSuccessModal, show: false })} 
+               className="w-full mt-10 py-5 premium-btn text-white font-black rounded-full shadow-2xl active:scale-95 transition-all text-sm uppercase tracking-[0.2em]"
              >
                {lang === 'bn' ? 'ঠিক আছে' : 'OK'}
              </button>
+             
+             {/* Decorative Background Elements */}
+             <div className="absolute top-[-10%] right-[-10%] w-24 h-24 blur-[50px] opacity-10 rounded-full bg-green-400"></div>
+             <div className="absolute bottom-[-10%] left-[-10%] w-24 h-24 blur-[50px] opacity-10 rounded-full bg-blue-400"></div>
           </div>
         </div>
       )}

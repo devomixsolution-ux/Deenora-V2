@@ -34,7 +34,7 @@ const App: React.FC = () => {
     return (localStorage.getItem('app_lang') as Language) || 'bn';
   });
 
-  const APP_VERSION = "2.5.0-PREMIUM";
+  const APP_VERSION = "2.5.1-PREMIUM";
 
   const triggerRefresh = () => {
     setDataVersion(prev => prev + 1);
@@ -82,55 +82,71 @@ const App: React.FC = () => {
           created_at: data.created_at
         } as Madrasah);
       } else if (data && !data.is_active) {
+        // Only logout if explicitly deactivated
         logout();
       }
     } catch (e) {
-      console.error(e);
+      console.error("Teacher profile sync failed:", e);
     }
   };
 
   useEffect(() => {
     const initializeSession = async () => {
+      // 1. Check for Teacher session first (highest priority for offline/persistent)
       const savedTeacher = localStorage.getItem('teacher_session');
       if (savedTeacher) {
-        const teacherData = JSON.parse(savedTeacher);
-        setTeacher(teacherData);
-        setMadrasah({ 
-          id: teacherData.madrasah_id, 
-          name: teacherData.madrasahs?.name || 'Madrasah Contact', 
-          logo_url: teacherData.madrasahs?.logo_url,
-          is_super_admin: false,
-          balance: 0,
-          sms_balance: 0,
-          is_active: true,
-          created_at: teacherData.created_at
-        } as Madrasah);
-        if (navigator.onLine) await syncTeacherProfile(teacherData.id);
-        setLoading(false);
-        return;
+        try {
+          const teacherData = JSON.parse(savedTeacher);
+          setTeacher(teacherData);
+          setMadrasah({ 
+            id: teacherData.madrasah_id, 
+            name: teacherData.madrasahs?.name || 'Madrasah Contact', 
+            logo_url: teacherData.madrasahs?.logo_url,
+            is_super_admin: false,
+            balance: 0,
+            sms_balance: 0,
+            is_active: true,
+            created_at: teacherData.created_at
+          } as Madrasah);
+          if (navigator.onLine) await syncTeacherProfile(teacherData.id);
+          setLoading(false);
+          return;
+        } catch (e) {
+          console.error("Corrupt teacher session");
+          localStorage.removeItem('teacher_session');
+        }
       }
 
+      // 2. Check for Admin Supabase session
       const { data: { session: currentSession } } = await (supabase.auth as any).getSession();
       setSession(currentSession);
+      
       if (currentSession) {
         await fetchMadrasahProfile(currentSession.user.id);
       } else {
+        // Final fallback: try to use cached profile if we were previously logged in as admin
+        const cachedProfile = offlineApi.getCache('profile');
+        if (cachedProfile) {
+          setMadrasah(cachedProfile);
+        }
         setLoading(false);
       }
     };
 
     initializeSession();
 
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event: any, session: any) => {
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string, session: any) => {
+      console.log("Supabase Auth Event:", event);
       setSession(session);
+      
       if (session) {
         setLoading(true);
         fetchMadrasahProfile(session.user.id);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         if (!localStorage.getItem('teacher_session')) {
           setMadrasah(null);
+          setView('home');
         }
-        setLoading(false);
       }
     });
 
@@ -145,11 +161,11 @@ const App: React.FC = () => {
         setMadrasah(data);
         offlineApi.setCache('profile', data);
         setLoading(false);
-      } else if (retryCount < 5) {
-        console.log(`Profile not found, retrying... (${retryCount + 1}/5)`);
-        setTimeout(() => fetchMadrasahProfile(userId, retryCount + 1), 1000);
+      } else if (error && retryCount < 3) {
+        setTimeout(() => fetchMadrasahProfile(userId, retryCount + 1), 1500);
       } else {
-        setMadrasah(null);
+        // Only nullify if we're sure no profile exists for this ID
+        if (!madrasah) setMadrasah(null);
         setLoading(false);
       }
     } catch (err) {
@@ -182,13 +198,20 @@ const App: React.FC = () => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem('teacher_session');
+    localStorage.removeItem('m_name');
+    offlineApi.removeCache('profile');
+    
     if (session) {
-      (supabase.auth as any).signOut();
-    } else {
-      window.location.reload();
+      await (supabase.auth as any).signOut();
     }
+    
+    setMadrasah(null);
+    setTeacher(null);
+    setSession(null);
+    setView('home');
+    window.location.reload();
   };
 
   const navigateTo = (newView: View) => {
@@ -211,28 +234,17 @@ const App: React.FC = () => {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] relative overflow-hidden mesh-bg-vibrant">
-        {/* Animated Background Blobs */}
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#8D30F4] rounded-full blur-[120px] opacity-40 animate-pulse"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#A179FF] rounded-full blur-[120px] opacity-40 animate-pulse" style={{ animationDelay: '1s' }}></div>
 
         <div className="relative z-10 flex flex-col items-center">
-          {/* Advanced Pulse Loader */}
           <div className="relative w-40 h-40 flex items-center justify-center">
-            {/* Outer Rotating Dash Ring */}
             <div className="absolute inset-0 border-[3px] border-dashed border-white/20 rounded-full animate-[spin_8s_linear_infinite]"></div>
-            
-            {/* Middle Pulsing Glow Ring */}
             <div className="absolute inset-4 border-[4px] border-white/30 rounded-full animate-[ping_3s_ease-in-out_infinite] opacity-20"></div>
-            
-            {/* Core Spinning Loader */}
             <div className="absolute inset-8 border-t-[5px] border-r-[5px] border-white border-solid rounded-full animate-spin shadow-[0_0_20px_rgba(255,255,255,0.4)]"></div>
-            
-            {/* Center Brand Icon */}
             <div className="relative w-16 h-16 bg-white rounded-[1.8rem] flex items-center justify-center shadow-2xl animate-[pulse_2s_ease-in-out_infinite] border-2 border-white/50">
               <BookOpen size={32} className="text-[#8D30F4]" />
             </div>
-
-            {/* Orbiting Sparkles */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 animate-bounce">
               <Sparkles size={16} className="text-white/40" />
             </div>
@@ -256,7 +268,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Brand Footer */}
         <div className="absolute bottom-10 left-0 right-0 text-center opacity-30">
           <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Authorized System Only</p>
         </div>
