@@ -445,58 +445,58 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
       </div>
 
       {isEditingProfile && (
-        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[600] flex items-center justify-center p-6 animate-in fade-in">
-           <div className="bg-white w-full max-w-sm rounded-[4rem] p-10 shadow-2xl space-y-10 animate-in zoom-in-95 duration-500 relative">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-purple-50 text-[#8D30F4] rounded-2xl flex items-center justify-center shadow-inner">
-                    <Edit3 size={28} />
+        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[600] flex items-center justify-center p-4">
+           <div className="bg-white w-full max-w-sm rounded-[4rem] p-8 shadow-2xl space-y-8 animate-in zoom-in-95 duration-500 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <div className="flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-50 text-[#8D30F4] rounded-2xl flex items-center justify-center shadow-inner">
+                    <Edit3 size={24} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-[#2E0B5E] font-noto tracking-tight">{t('edit_account_info', lang)}</h3>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Profile Metadata</p>
+                    <h3 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">{t('edit_account_info', lang)}</h3>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Profile Metadata</p>
                   </div>
                 </div>
-                <button onClick={() => setIsEditingProfile(false)} className="w-10 h-10 bg-slate-50 text-slate-400 hover:text-red-500 transition-colors rounded-xl flex items-center justify-center"><X size={24} /></button>
+                <button onClick={() => setIsEditingProfile(false)} className="w-9 h-9 bg-slate-50 text-slate-400 hover:text-red-500 transition-colors rounded-xl flex items-center justify-center"><X size={20} /></button>
               </div>
 
-              <div className="space-y-6">
-                 <div className="space-y-2.5">
+              <div className="space-y-5">
+                 <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t('madrasah_name', lang)}</label>
-                    <input type="text" className="w-full h-16 bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 font-black text-[#2E0B5E] text-lg outline-none focus:border-[#8D30F4]/30" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                    <input type="text" className="w-full h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 font-black text-[#2E0B5E] text-base outline-none focus:border-[#8D30F4]/30" value={newName} onChange={(e) => setNewName(e.target.value)} />
                  </div>
-                 <div className="space-y-2.5">
+                 <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t('madrasah_phone', lang)}</label>
-                    <input type="tel" className="w-full h-16 bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 font-black text-[#2E0B5E] text-lg outline-none focus:border-[#8D30F4]/30" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+                    <input type="tel" className="w-full h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 font-black text-[#2E0B5E] text-base outline-none focus:border-[#8D30F4]/30" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
                  </div>
-                 <div className="space-y-2.5">
+                 <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t('madrasah_code_label', lang)}</label>
-                    <input type="text" className="w-full h-16 bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 font-black text-[#2E0B5E] text-lg outline-none focus:border-[#8D30F4]/30" value={newLoginCode} onChange={(e) => setNewLoginCode(e.target.value)} />
+                    <input type="text" className="w-full h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 font-black text-[#2E0B5E] text-base outline-none focus:border-[#8D30F4]/30" value={newLoginCode} onChange={(e) => setNewLoginCode(e.target.value)} />
                  </div>
               </div>
 
-              <div className="flex gap-4 pt-2">
-                 <button onClick={() => setIsEditingProfile(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 font-black rounded-3xl text-sm active:scale-95 transition-all">{t('cancel_btn', lang)}</button>
-                 <button onClick={handleUpdate} disabled={saving} className="flex-[2] py-5 bg-[#8D30F4] text-white font-black rounded-3xl text-sm shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
-                    {saving ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> {t('save_changes', lang)}</>}
+              <div className="flex gap-3 pt-2 shrink-0">
+                 <button onClick={() => setIsEditingProfile(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl text-xs active:scale-95 transition-all">{t('cancel_btn', lang)}</button>
+                 <button onClick={handleUpdate} disabled={saving} className="flex-[2] py-4 bg-[#8D30F4] text-white font-black rounded-2xl text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                    {saving ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18} /> {t('save_changes', lang)}</>}
                  </button>
               </div>
            </div>
         </div>
       )}
 
-      {/* Success Modal */}
+      {/* Success Modal - Fixed positioning to avoid clipping */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-2xl z-[1000] flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-12 text-center shadow-[0_40px_100px_rgba(141,48,244,0.3)] border border-[#8D30F4]/10 animate-in zoom-in-95 duration-300">
-             <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-green-100">
-                <CheckCircle2 size={56} strokeWidth={2.5} />
+        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-2xl z-[1000] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_40px_100px_rgba(141,48,244,0.3)] border border-[#8D30F4]/10 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
+             <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-green-100">
+                <CheckCircle2 size={48} strokeWidth={2.5} />
              </div>
-             <h3 className="text-2xl font-black text-slate-800 font-noto tracking-tight">{t('success', lang)}</h3>
-             <p className="text-[11px] font-bold text-slate-400 mt-4 uppercase tracking-[0.2em] font-noto">Profile updated successfully</p>
+             <h3 className="text-xl font-black text-slate-800 font-noto tracking-tight">{t('success', lang)}</h3>
+             <p className="text-[10px] font-bold text-slate-400 mt-3 uppercase tracking-[0.2em] font-noto">Profile updated successfully</p>
              <button 
                onClick={() => setShowSuccessModal(false)} 
-               className="w-full mt-10 py-5 premium-btn text-white font-black rounded-full shadow-xl active:scale-95 transition-all text-sm uppercase tracking-widest"
+               className="w-full mt-8 py-4 premium-btn text-white font-black rounded-full shadow-xl active:scale-95 transition-all text-sm uppercase tracking-widest"
              >
                {lang === 'bn' ? 'ঠিক আছে' : 'OK'}
              </button>
