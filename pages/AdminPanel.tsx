@@ -198,7 +198,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       return;
     }
     try {
-      // Note: approve_payment_with_sms is a stored procedure (RPC) in the database
       const { error } = await supabase.rpc('approve_payment_with_sms', { 
         t_id: tr.id, 
         m_id: tr.madrasah_id, 

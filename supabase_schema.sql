@@ -189,6 +189,8 @@ FROM auth.users
 ON CONFLICT (id) DO NOTHING;
 
 -- ১৫. এসএমএস পাঠানোর ফাংশন (RPC)
+-- DROP first to avoid "cannot change return type" error
+DROP FUNCTION IF EXISTS public.send_bulk_sms_rpc(UUID, UUID[], TEXT);
 CREATE OR REPLACE FUNCTION public.send_bulk_sms_rpc(p_madrasah_id UUID, p_student_ids UUID[], p_message TEXT)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v_count INTEGER; v_current_balance INTEGER;
@@ -201,6 +203,8 @@ BEGIN
 END; $$;
 
 -- ১৬. পেমেন্ট অনুমোদন ও এসএমএস যোগ করার ফাংশন (RPC)
+-- DROP first to avoid "cannot change return type" error
+DROP FUNCTION IF EXISTS public.approve_payment_with_sms(UUID, UUID, INTEGER);
 CREATE OR REPLACE FUNCTION public.approve_payment_with_sms(t_id UUID, m_id UUID, sms_to_give INTEGER)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
@@ -214,7 +218,7 @@ BEGIN
     SET sms_balance = COALESCE(sms_balance, 0) + sms_to_give 
     WHERE id = m_id;
 
-    -- ৩. অ্যাডমিন স্টক আপডেট (Explicit WHERE clause added to avoid PostgREST safety errors)
+    -- ৩. অ্যাডমিন স্টক আপডেট (Explicit WHERE clause for safety)
     UPDATE public.admin_sms_stock 
     SET remaining_sms = remaining_sms - sms_to_give, 
         updated_at = now()
