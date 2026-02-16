@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // Added missing AlertTriangle import
 import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap, Banknote } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
@@ -55,56 +55,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => { 
-    initData(); 
-  }, [dataVersion, view]);
-
-  useEffect(() => {
-    if (currentView === 'approvals') setView('approvals');
-    else if (currentView === 'dashboard') setView('dashboard');
-    else if (currentView === 'list') setView('list');
-  }, [currentView]);
-
-  const initData = async () => {
-    setLoading(true);
-    try {
-      if (view === 'list' || view === 'dashboard') {
-        await fetchAllMadrasahs();
-        await fetchGlobalCounts();
-        await fetchAdminStock();
-      }
-      if (view === 'approvals') {
-        await fetchPendingTransactions();
-        await fetchTransactionHistory();
-      }
-    } catch (err) { 
-      console.error("AdminPanel Init Error:", err); 
-    } finally { 
-      setLoading(false); 
-    }
-  };
-
   const fetchGlobalCounts = async () => {
-    const [studentsRes, classesRes, teachersRes, madrasahsRes] = await Promise.all([
+    // Summing sms_count from approved transactions to get the total SMS ever given (allocated)
+    const [studentsRes, classesRes, teachersRes, smsAllocRes] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }),
       supabase.from('classes').select('*', { count: 'exact', head: true }),
       supabase.from('teachers').select('*', { count: 'exact', head: true }),
-      supabase.from('madrasahs').select('sms_balance')
+      supabase.from('transactions').select('sms_count').eq('status', 'approved')
     ]);
 
-    const totalSMS = madrasahsRes.data?.reduce((sum, m) => sum + (m.sms_balance || 0), 0) || 0;
+    const totalAllocatedSMS = smsAllocRes.data?.reduce((sum, t) => sum + (Number(t.sms_count) || 0), 0) || 0;
 
-    setGlobalStats({
+    return {
       totalStudents: studentsRes.count || 0,
       totalClasses: classesRes.count || 0,
       totalTeachers: teachersRes.count || 0,
-      totalDistributedSMS: totalSMS
-    });
+      totalDistributedSMS: totalAllocatedSMS
+    };
   };
 
   const fetchAdminStock = async () => {
     const { data } = await supabase.from('admin_sms_stock').select('*').limit(1).maybeSingle();
-    if (data) setAdminStock(data);
+    return data || null;
   };
 
   const fetchAllMadrasahs = async () => {
@@ -114,22 +86,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    if (data) {
-      // Don't refetch all stats if we already have them to prevent UI lag
-      setMadrasahs(data.map(m => {
-        const existing = madrasahs.find(ex => ex.id === m.id);
-        return { 
-          ...m, 
-          student_count: existing?.student_count || 0, 
-          class_count: existing?.class_count || 0 
-        };
-      }));
-    }
+    return data || [];
   };
 
   const fetchPendingTransactions = async () => {
     const { data } = await supabase.from('transactions').select('*, madrasahs(*)').eq('status', 'pending').order('created_at', { ascending: false });
-    if (data) setPendingTrans(data);
+    return data || [];
   };
 
   const fetchTransactionHistory = async () => {
@@ -138,8 +100,60 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       .neq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(50);
-    if (data) setTransactionHistory(data);
+    return data || [];
   };
+
+  const initData = useCallback(async () => {
+    setLoading(true);
+    let isMounted = true;
+    try {
+      if (view === 'list' || view === 'dashboard') {
+        const [mList, gStats, aStock] = await Promise.all([
+          fetchAllMadrasahs(),
+          fetchGlobalCounts(),
+          fetchAdminStock()
+        ]);
+        if (isMounted) {
+          setMadrasahs(mList.map(m => {
+            const existing = madrasahs.find(ex => ex.id === m.id);
+            return { 
+              ...m, 
+              student_count: existing?.student_count || 0, 
+              class_count: existing?.class_count || 0 
+            };
+          }));
+          setGlobalStats(gStats);
+          setAdminStock(aStock);
+        }
+      }
+      if (view === 'approvals') {
+        const [pTrans, tHist] = await Promise.all([
+          fetchPendingTransactions(),
+          fetchTransactionHistory()
+        ]);
+        if (isMounted) {
+          setPendingTrans(pTrans);
+          setTransactionHistory(tHist);
+        }
+      }
+    } catch (err) { 
+      console.error("AdminPanel Init Error:", err); 
+    } finally { 
+      if (isMounted) setLoading(false); 
+    }
+    return () => { isMounted = false; };
+  }, [view, madrasahs.length]);
+
+  useEffect(() => { 
+    const cleanup = initData(); 
+    return () => { cleanup.then(cb => cb && cb()); };
+  }, [dataVersion, view]);
+
+  useEffect(() => {
+    if (currentView === 'approvals') setView('approvals');
+    else if (currentView === 'dashboard') setView('dashboard');
+    else if (currentView === 'list') setView('list');
+  }, [currentView]);
 
   const fetchDynamicStats = async (madrasahId: string) => {
     setIsRefreshingStats(true);
@@ -282,7 +296,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Active Portals</p>
                 </div>
                 
-                {/* REPLACED REVENUE CARD WITH TOTAL DISTRIBUTED SMS */}
+                {/* REPLACED CURRENT BALANCE SUM WITH TOTAL EVER ALLOCATED BY ADMIN */}
                 <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center col-span-2 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                     <Zap size={60} />
@@ -291,7 +305,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                     <MessageSquare size={20} />
                   </div>
                   <h4 className="text-3xl font-black text-[#2E0B5E] relative z-10">{globalStats.totalDistributedSMS.toLocaleString('bn-BD')}</h4>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 relative z-10">Total Distributed SMS (Users)</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 relative z-10">Total SMS Allocated to Users</p>
                 </div>
               </div>
 
@@ -307,7 +321,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       <h5 className="text-xl font-black text-[#2E0B5E]">{adminStock?.remaining_sms || 0}</h5>
                     </div>
                     <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Distributed</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Allocated</p>
                       <h5 className="text-xl font-black text-[#8D30F4]">{globalStats.totalDistributedSMS}</h5>
                     </div>
                   </div>
@@ -606,7 +620,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       {/* Status Modal - Premium Redesign */}
       {statusModal.show && (
         <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[4rem] p-12 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+          <div className="bg-white w-full max-sm rounded-[4rem] p-12 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
              <div className={`w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-10 transition-transform duration-700 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 'bg-red-50 text-red-500 border-red-100'} border-4 shadow-inner`}>
                 {statusModal.type === 'success' ? <CheckCircle2 size={64} strokeWidth={2.5} /> : <AlertCircle size={64} strokeWidth={2.5} />}
              </div>

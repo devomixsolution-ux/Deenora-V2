@@ -80,6 +80,7 @@ export interface Transaction {
   id: string;
   madrasah_id: string;
   amount: number;
+  sms_count?: number; // Added to track SMS quantity
   transaction_id: string;
   sender_phone: string;
   description?: string;
