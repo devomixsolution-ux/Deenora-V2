@@ -243,13 +243,6 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
             {recentCalls.map(call => (
               <div key={call.id} onClick={() => call.students && onStudentClick(call.students)} className="bg-white/95 p-4 rounded-[1.8rem] border border-white/40 flex items-center justify-between shadow-xl active:scale-[0.98] transition-all group backdrop-blur-lg">
                 <div className="flex items-center gap-4 min-w-0 flex-1">
-                  <div className="w-11 h-11 bg-gradient-to-br from-[#F2EBFF] to-white rounded-2xl flex items-center justify-center text-[#8D30F4] shrink-0 border border-[#8D30F4]/10 shadow-inner overflow-hidden">
-                    {call.students?.photo_url ? (
-                      <img src={call.students.photo_url} className="w-full h-full object-cover" alt="Student" />
-                    ) : (
-                      <UserIcon size={24} strokeWidth={2.5} />
-                    )}
-                  </div>
                   <div className="min-w-0">
                     <h3 className="font-black text-[#4B168A] text-[16px] font-noto truncate leading-tight tracking-tight">{call.students?.student_name || 'অজানা'}</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">

@@ -379,14 +379,14 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
            <div className="grid grid-cols-2 gap-5">
               <BentoAction 
                 icon={UserPlus} 
-                title="Staff Registry" 
+                title="Manage teachers" 
                 desc="Access Controls" 
                 onClick={() => setView('teachers')} 
                 theme="bg-gradient-to-br from-[#8D30F4] to-[#A179FF]" 
               />
               <BentoAction 
                 icon={Database} 
-                title="Data Terminal" 
+                title="Backup & restore" 
                 desc="Backup Hub" 
                 onClick={() => setView('data-management')} 
                 theme="bg-gradient-to-br from-indigo-500 to-indigo-700" 
@@ -412,13 +412,13 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
           </button>
         )}
 
-        <div className="w-full p-8 flex items-center justify-between">
+        <div className="w-full p-8 flex items-center justify-between group">
           <div className="flex items-center gap-6">
             <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center border border-blue-100">
               <Languages size={22} />
             </div>
             <div className="text-left">
-              <h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">Localization</h5>
+              <h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">Language (ভাষা)</h5>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Select Language</p>
             </div>
           </div>
@@ -434,7 +434,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
               <LogOut size={22} />
             </div>
             <div className="text-left">
-              <h5 className="text-[17px] font-black text-red-600 font-noto">Terminate Session</h5>
+              <h5 className="text-[17px] font-black text-red-600 font-noto">Logout and login</h5>
               <p className="text-[10px] font-bold text-red-300 uppercase tracking-widest mt-1">Logout of System</p>
             </div>
           </div>
