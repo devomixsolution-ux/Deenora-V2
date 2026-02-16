@@ -227,7 +227,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-36 relative z-[100]">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-36 relative z-10">
       
       {/* Super Admin Control Hub */}
       {isSuperAdmin && (
@@ -297,7 +297,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
 
       {/* Profile Identity Card Section */}
       <div className="relative pt-20 px-1">
-        {/* FIXED: Removed overflow-hidden so the logo isn't clipped */}
+        {/* FIXED: Ensure relative position and adequate padding for absolute logo */}
         <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
           
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-20">
@@ -451,8 +451,9 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </button>
       </div>
 
+      {/* Edit Profile Modal - High z-index to cover navigation */}
       {isEditingProfile && (
-        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-center justify-center p-4">
            <div className="bg-white w-full max-w-sm rounded-[4rem] p-8 shadow-2xl space-y-8 animate-in zoom-in-95 duration-500 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
               <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
@@ -492,9 +493,9 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>
       )}
 
-      {/* Success Modal - Fixed positioning to avoid clipping, definitively high Z-index */}
+      {/* Success Modal - Highest z-index */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-2xl z-[9999] flex items-center justify-center p-6">
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-[#080A12]/60 backdrop-blur-2xl z-[9999] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_40px_100px_rgba(141,48,244,0.3)] border border-[#8D30F4]/10 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
              <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-green-100">
                 <CheckCircle2 size={56} strokeWidth={2.5} />

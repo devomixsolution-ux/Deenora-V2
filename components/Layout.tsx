@@ -38,7 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
       {/* Header with lower priority stack */}
       <header className="flex-none px-6 pt-[calc(env(safe-area-inset-top)+8px)] pb-3 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="w-11 h-11 rounded-[1rem] flex items-center justify-center bg-white shadow-sm border border-white/20 shrink-0 overflow-hidden">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center bg-white shadow-sm border border-white/20 shrink-0 overflow-hidden">
             {isSuperAdmin ? (
                <ShieldCheck size={24} className="text-[#8D30F4]" />
             ) : madrasah?.logo_url ? (
@@ -67,8 +67,8 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
         {children}
       </main>
 
-      {/* Navigation - Needs higher stack than page content but lower than modals */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-sm z-[50]">
+      {/* Navigation - High z-index to stay on top of content */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-sm z-[200]">
         <nav className="bg-white/95 backdrop-blur-[25px] border border-white/50 flex justify-around items-center py-3 px-2 rounded-[2.5rem] shadow-[0_20px_50px_-10px_rgba(46,11,94,0.3)]">
           <button onClick={() => setView('home')} className={`relative flex flex-col items-center gap-0.5 transition-all flex-1 ${isTabActive('home') ? 'text-[#8D30F4]' : 'text-[#A179FF]'}`}>
             <Home size={22} strokeWidth={isTabActive('home') ? 3 : 2} />
