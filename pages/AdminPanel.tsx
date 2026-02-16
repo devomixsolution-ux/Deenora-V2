@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, Transaction, AdminSMSStock } from '../types';
 
@@ -35,7 +35,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     message: ''
   });
 
-  const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0 });
+  const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0, totalTeachers: 0 });
   const [selectedUser, setSelectedUser] = useState<MadrasahWithStats | null>(null);
   const [userStats, setUserStats] = useState({ students: 0, classes: 0 });
   
@@ -81,13 +81,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   };
 
   const fetchGlobalCounts = async () => {
-    const [studentsRes, classesRes] = await Promise.all([
+    const [studentsRes, classesRes, teachersRes] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }),
-      supabase.from('classes').select('*', { count: 'exact', head: true })
+      supabase.from('classes').select('*', { count: 'exact', head: true }),
+      supabase.from('teachers').select('*', { count: 'exact', head: true })
     ]);
     setGlobalStats({
       totalStudents: studentsRes.count || 0,
-      totalClasses: classesRes.count || 0
+      totalClasses: classesRes.count || 0,
+      totalTeachers: teachersRes.count || 0
     });
   };
 
@@ -264,14 +266,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#F2EBFF]/50 p-6 rounded-[2.5rem] border border-white/50 shadow-lg">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-[#F2EBFF]/50 p-6 rounded-[2.5rem] border border-white/50 shadow-lg flex flex-col items-center">
+                   <Users size={20} className="text-[#8D30F4] mb-2" />
                   <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">Students</span>
                   <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalStudents}</h4>
                 </div>
-                <div className="bg-[#F2EBFF]/50 p-6 rounded-[2.5rem] border border-white/50 shadow-lg">
+                <div className="bg-[#F2EBFF]/50 p-6 rounded-[2.5rem] border border-white/50 shadow-lg flex flex-col items-center">
+                   <Layers size={20} className="text-[#8D30F4] mb-2" />
                   <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">Classes</span>
                   <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalClasses}</h4>
+                </div>
+                <div className="bg-[#F2EBFF]/50 p-6 rounded-[2.5rem] border border-white/50 shadow-lg flex flex-col items-center">
+                   <GraduationCap size={20} className="text-[#8D30F4] mb-2" />
+                  <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">Teachers</span>
+                  <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalTeachers}</h4>
                 </div>
               </div>
             </div>

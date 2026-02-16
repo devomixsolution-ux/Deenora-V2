@@ -56,7 +56,9 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
       setReveSecretKey(initialMadrasah.reve_secret_key || '');
       setReveCallerId(initialMadrasah.reve_caller_id || '');
       
-      fetchStats();
+      if (!isSuperAdmin) {
+        fetchStats();
+      }
       if (isSuperAdmin) {
         fetchGlobalSettings();
       }
@@ -381,12 +383,14 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 </div>
              </div>
 
-             <div className="grid grid-cols-2 gap-4 mt-8 pt-4">
-                <StatCard icon={Users} value={stats.students} label={t('students', lang)} colorClass="bg-purple-600" delay="duration-300" />
-                <StatCard icon={Layers} value={stats.classes} label={t('classes', lang)} colorClass="bg-blue-600" delay="duration-500" />
-                <StatCard icon={GraduationCap} value={stats.teachers} label={t('teachers', lang)} colorClass="bg-emerald-600" delay="duration-700" />
-                <StatCard icon={Zap} value={madrasah.sms_balance || 0} label={t('wallet', lang)} colorClass="bg-amber-600" delay="duration-1000" />
-             </div>
+             {!isSuperAdmin && (
+              <div className="grid grid-cols-2 gap-4 mt-8 pt-4">
+                  <StatCard icon={Users} value={stats.students} label={t('students', lang)} colorClass="bg-purple-600" delay="duration-300" />
+                  <StatCard icon={Layers} value={stats.classes} label={t('classes', lang)} colorClass="bg-blue-600" delay="duration-500" />
+                  <StatCard icon={GraduationCap} value={stats.teachers} label={t('teachers', lang)} colorClass="bg-emerald-600" delay="duration-700" />
+                  <StatCard icon={Zap} value={madrasah.sms_balance || 0} label={t('wallet', lang)} colorClass="bg-amber-600" delay="duration-1000" />
+              </div>
+             )}
           </div>
         </div>
       </div>
