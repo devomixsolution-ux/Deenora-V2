@@ -259,7 +259,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
            
            {isEditingGlobal ? (
               <div className="space-y-6 animate-in slide-in-from-top-4 duration-500 relative z-10">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-white/5 p-6 rounded-3xl border border-white/10 focus-within:border-[#8D30F4]/50 transition-all shadow-inner">
                        <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block mb-2.5">Global API Gateway</label>
                        <input type="text" className="bg-transparent border-none outline-none font-black text-white text-sm w-full placeholder:text-white/20" value={globalSettings.reve_api_key} onChange={(e) => setGlobalSettings({...globalSettings, reve_api_key: e.target.value})} placeholder="Enter Key..." />
@@ -271,6 +271,10 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                     <div className="bg-white/5 p-6 rounded-3xl border border-white/10 focus-within:border-[#8D30F4]/50 transition-all shadow-inner">
                        <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block mb-2.5">Global Sender ID</label>
                        <input type="text" className="bg-transparent border-none outline-none font-black text-white text-sm w-full placeholder:text-white/20" value={globalSettings.reve_caller_id} onChange={(e) => setGlobalSettings({...globalSettings, reve_caller_id: e.target.value})} placeholder="e.g. 12345" />
+                    </div>
+                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 focus-within:border-[#8D30F4]/50 transition-all shadow-inner">
+                       <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block mb-2.5">Payment Number (bKash)</label>
+                       <input type="text" className="bg-transparent border-none outline-none font-black text-white text-sm w-full placeholder:text-white/20" value={globalSettings.bkash_number} onChange={(e) => setGlobalSettings({...globalSettings, bkash_number: e.target.value})} placeholder="e.g. 01766-XXXXXX" />
                     </div>
                  </div>
                  <button onClick={handleSaveGlobalSettings} disabled={saving} className="w-full py-5 bg-[#8D30F4] text-white font-black rounded-3xl text-sm shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/10">
@@ -290,11 +294,11 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                  </div>
                  <div className="flex-1 min-w-[140px] bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors">
                     <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center">
-                       <Server size={22} />
+                       <CreditCard size={22} />
                     </div>
                     <div>
-                       <p className="text-[8px] font-black text-[#A179FF] uppercase tracking-widest">Uptime</p>
-                       <p className="text-sm font-black text-white">99.9%</p>
+                       <p className="text-[8px] font-black text-[#A179FF] uppercase tracking-widest">Payment</p>
+                       <p className="text-sm font-black text-white truncate max-w-[80px]">{globalSettings.bkash_number || 'N/A'}</p>
                     </div>
                  </div>
                  <div className="flex-1 min-w-[140px] bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors">
