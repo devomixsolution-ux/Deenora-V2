@@ -47,14 +47,24 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
   const [copiedId, setCopiedId] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // CRITICAL: Synchronize local state with prop when it changes (profile load delay)
   useEffect(() => {
-    if (initialMadrasah?.id) {
+    if (initialMadrasah) {
+      setMadrasah(initialMadrasah);
+      setNewName(initialMadrasah.name || '');
+      setNewPhone(initialMadrasah.phone || '');
+      setNewLoginCode(initialMadrasah.login_code || '');
+      setLogoUrl(initialMadrasah.logo_url || '');
+      setReveApiKey(initialMadrasah.reve_api_key || '');
+      setReveSecretKey(initialMadrasah.reve_secret_key || '');
+      setReveCallerId(initialMadrasah.reve_caller_id || '');
+      
       fetchStats();
       if (isSuperAdmin) {
         fetchGlobalSettings();
       }
     }
-  }, [initialMadrasah?.id, isSuperAdmin]);
+  }, [initialMadrasah, isSuperAdmin]);
 
   const fetchStats = async () => {
     if (!initialMadrasah) return;
@@ -162,7 +172,14 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
     } catch (e: any) { alert(e.message); } finally { setSaving(false); }
   };
 
-  if (!madrasah) return null;
+  if (!madrasah) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-white/60">
+        <Loader2 className="animate-spin mb-4" size={40} />
+        <p className="text-[10px] font-black uppercase tracking-[0.2em]">Loading Profile Data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-28">
