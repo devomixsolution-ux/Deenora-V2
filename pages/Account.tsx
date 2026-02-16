@@ -221,7 +221,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-36 relative z-[60]">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-36 relative">
       
       {/* Super Admin Control Hub */}
       {isSuperAdmin && (
@@ -291,7 +291,8 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
 
       {/* Profile Identity Card Section */}
       <div className="relative pt-20 px-1">
-        <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center overflow-hidden">
+        {/* CRITICAL FIX: Removed overflow-hidden from this container so the logo (-top-16) is not clipped */}
+        <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
           
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-20">
             <div className="relative">
@@ -321,7 +322,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
 
           <div className="space-y-6">
              <div className="space-y-3">
-                <h2 className="text-[28px] sm:text-[34px] font-black text-[#2E0B5E] font-noto tracking-tight leading-tight px-4 overflow-hidden text-ellipsis">
+                <h2 className="text-[28px] sm:text-[34px] font-black text-[#2E0B5E] font-noto tracking-tight leading-tight px-4 break-words">
                   {madrasah.name}
                 </h2>
                 
@@ -444,8 +445,9 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </button>
       </div>
 
+      {/* Edit Profile Modal - CRITICAL FIX: Ensure fixed backdrop is relative to screen, not a parent container */}
       {isEditingProfile && (
-        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-[#080A12]/80 backdrop-blur-2xl z-[1000] flex items-center justify-center p-4 m-0 overflow-hidden">
+        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-center justify-center p-4">
            <div className="bg-white w-full max-w-sm rounded-[4rem] p-8 shadow-2xl space-y-8 animate-in zoom-in-95 duration-500 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
               <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
@@ -485,9 +487,9 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>
       )}
 
-      {/* Success Modal - Fixed positioning to avoid clipping */}
+      {/* Success Modal - Fixed positioning to avoid clipping, definitively high Z-index */}
       {showSuccessModal && (
-        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-[#080A12]/60 backdrop-blur-2xl z-[2000] flex items-center justify-center p-6 m-0 overflow-hidden">
+        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-2xl z-[9999] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_40px_100px_rgba(141,48,244,0.3)] border border-[#8D30F4]/10 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
              <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-green-100">
                 <CheckCircle2 size={48} strokeWidth={2.5} />
