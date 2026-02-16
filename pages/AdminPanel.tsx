@@ -328,36 +328,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                 </div>
               </div>
 
-              <div className="bg-white/95 p-6 rounded-[3rem] border border-white shadow-2xl space-y-5">
-                <div className="flex items-center justify-between px-2">
-                  <h3 className="text-lg font-black text-[#2E0B5E] font-noto flex items-center gap-2">
-                    <PhoneCall size={20} className="text-[#8D30F4]" /> সাম্প্রতিক কলসমূহ (২০টি)
-                  </h3>
-                  <Clock size={18} className="text-slate-300" />
-                </div>
-                <div className="space-y-2.5 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
-                  {globalRecentCalls.length > 0 ? globalRecentCalls.map((call, idx) => (
-                    <div key={call.id} className="bg-slate-50/70 p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:bg-white transition-colors">
-                      <div className="min-w-0 flex-1">
-                         <div className="flex items-center gap-2 mb-1">
-                            <span className="w-6 h-6 rounded-lg bg-[#8D30F4]/10 text-[#8D30F4] text-[10px] font-black flex items-center justify-center shrink-0">{idx + 1}</span>
-                            <h5 className="font-black text-[#2E0B5E] text-sm truncate font-noto">{call.students?.student_name || 'N/A'}</h5>
-                         </div>
-                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter ml-8 truncate">Madrasah: {call.madrasahs?.name}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                         <p className="text-[10px] font-black text-[#8D30F4]">{new Date(call.called_at).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</p>
-                         <p className="text-[8px] font-bold text-slate-300">{new Date(call.called_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' })}</p>
-                      </div>
-                    </div>
-                  )) : (
-                    <div className="text-center py-10">
-                       <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest">No Activity Records</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <div className="bg-white/95 p-8 rounded-[3rem] border border-white shadow-2xl space-y-8">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-black text-[#2E0B5E] font-noto">SMS Inventory</h3>
@@ -666,7 +636,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                  <button onClick={rejectTransaction} disabled={isRejecting} className="w-full py-4 bg-red-500 text-white font-black rounded-full shadow-xl shadow-red-100 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest">
                     {isRejecting ? <Loader2 className="animate-spin" size={18} /> : 'হ্যাঁ, বাতিল করুন'}
                  </button>
-                 <button onClick={() => setRejectConfirm(null)} disabled={isRejecting} className="w-full py-3 bg-slate-50 text-slate-400 font-black rounded-full active:scale-95 transition-all text-[10px] uppercase tracking-widest">পিজনে যান</button>
+                 <button onClick={() => setRejectConfirm(null)} disabled={isRejecting} className="w-full py-3 bg-slate-50 text-slate-400 font-black rounded-full active:scale-95 transition-all text-[10px] uppercase tracking-widest">পিছনে যান</button>
               </div>
            </div>
         </div>
