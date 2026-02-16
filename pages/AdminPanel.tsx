@@ -39,7 +39,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [rejectConfirm, setRejectConfirm] = useState<Transaction | null>(null);
   const [isRejecting, setIsRejecting] = useState(false);
 
-  const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0, totalTeachers: 0, totalRevenue: 0 });
+  const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0, totalTeachers: 0, totalDistributedSMS: 0 });
   const [selectedUser, setSelectedUser] = useState<MadrasahWithStats | null>(null);
   const [userStats, setUserStats] = useState({ students: 0, classes: 0, teachers: 0 });
   
@@ -85,20 +85,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   };
 
   const fetchGlobalCounts = async () => {
-    const [studentsRes, classesRes, teachersRes, revenueRes] = await Promise.all([
+    const [studentsRes, classesRes, teachersRes, madrasahsRes] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }),
       supabase.from('classes').select('*', { count: 'exact', head: true }),
       supabase.from('teachers').select('*', { count: 'exact', head: true }),
-      supabase.from('transactions').select('amount').eq('status', 'approved')
+      supabase.from('madrasahs').select('sms_balance')
     ]);
 
-    const totalRev = revenueRes.data?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
+    const totalSMS = madrasahsRes.data?.reduce((sum, m) => sum + (m.sms_balance || 0), 0) || 0;
 
     setGlobalStats({
       totalStudents: studentsRes.count || 0,
       totalClasses: classesRes.count || 0,
       totalTeachers: teachersRes.count || 0,
-      totalRevenue: totalRev
+      totalDistributedSMS: totalSMS
     });
   };
 
@@ -282,16 +282,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Active Portals</p>
                 </div>
                 
-                {/* NEW REVENUE CARD */}
+                {/* REPLACED REVENUE CARD WITH TOTAL DISTRIBUTED SMS */}
                 <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center col-span-2 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
-                    <Banknote size={60} />
+                    <Zap size={60} />
                   </div>
                   <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-2 shadow-inner relative z-10">
-                    <Banknote size={20} />
+                    <MessageSquare size={20} />
                   </div>
-                  <h4 className="text-3xl font-black text-[#2E0B5E] relative z-10">{globalStats.totalRevenue.toLocaleString('bn-BD')} ৳</h4>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 relative z-10">Total Spend / Revenue</p>
+                  <h4 className="text-3xl font-black text-[#2E0B5E] relative z-10">{globalStats.totalDistributedSMS.toLocaleString('bn-BD')}</h4>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 relative z-10">Total Distributed SMS (Users)</p>
                 </div>
               </div>
 
@@ -307,8 +307,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       <h5 className="text-xl font-black text-[#2E0B5E]">{adminStock?.remaining_sms || 0}</h5>
                     </div>
                     <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Distributed</p>
-                      <h5 className="text-xl font-black text-[#8D30F4]">{madrasahs.reduce((a, c) => a + (c.sms_balance || 0), 0)}</h5>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Distributed</p>
+                      <h5 className="text-xl font-black text-[#8D30F4]">{globalStats.totalDistributedSMS}</h5>
                     </div>
                   </div>
                 </div>
