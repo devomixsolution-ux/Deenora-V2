@@ -62,7 +62,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
 
   const fetchGlobalCounts = async () => {
-    // We calculate "Total Sent" as: (Total Allocated via Transactions) - (Current sum of all User Balances)
     const [studentsRes, classesRes, teachersRes, smsAllocRes, currentBalRes] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }),
       supabase.from('classes').select('*', { count: 'exact', head: true }),
@@ -73,8 +72,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
     const totalAllocated = smsAllocRes.data?.reduce((sum, t) => sum + (Number(t.sms_count) || 0), 0) || 0;
     const totalInWallets = currentBalRes.data?.reduce((sum, m) => sum + (Number(m.sms_balance) || 0), 0) || 0;
-    
-    // Usage = Allocated - Unused
     const sentCount = Math.max(0, totalAllocated - totalInWallets);
 
     return {
@@ -194,9 +191,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         teachers: teachersRes.count || 0
       };
       setUserStats(stats);
-      
       setMadrasahs(prev => prev.map(m => m.id === madrasahId ? { ...m, student_count: stats.students, class_count: stats.classes } : m));
-
       if (recentCallsRes.data) setSelectedUserHistory(recentCallsRes.data);
     } catch (err) {
       console.error(err);
@@ -231,10 +226,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         reve_secret_key: editReveSecretKey.trim() || null,
         reve_caller_id: editReveCallerId.trim() || null
       };
-
       const { error } = await supabase.from('madrasahs').update(updateData).eq('id', selectedUser.id);
       if (error) throw error;
-      
       setMadrasahs(prev => prev.map(m => m.id === selectedUser.id ? { ...m, ...updateData } : m));
       setStatusModal({ show: true, type: 'success', title: lang === 'bn' ? 'সফল হয়েছে' : 'Updated', message: lang === 'bn' ? 'মাদরাসার তথ্য আপডেট করা হয়েছে।' : 'User profile updated successfully.' });
     } catch (err: any) {
@@ -251,18 +244,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       return;
     }
     try {
-      // Explicitly update the sms_count column in transactions record before/during approval
-      // This ensures global counts are accurate
       const { error: updateErr } = await supabase.from('transactions').update({ sms_count: sms }).eq('id', tr.id);
       if (updateErr) throw updateErr;
-
       const { error } = await supabase.rpc('approve_payment_with_sms', { 
         t_id: tr.id, 
         m_id: tr.madrasah_id, 
         sms_to_give: sms 
       });
       if (error) throw error;
-      
       setStatusModal({ show: true, type: 'success', title: 'সফল', message: 'রিচার্জ সফল হয়েছে' });
       initData();
     } catch (err: any) {
@@ -322,7 +311,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Active Portals</p>
                 </div>
                 
-                {/* SYSTEM STOCK & ALLOCATED ROW */}
                 <div className="bg-white/95 p-6 rounded-[2.5rem] border border-white shadow-xl flex flex-col items-center text-center col-span-2 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                     <PieChart size={60} />
@@ -340,7 +328,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                 </div>
               </div>
 
-              {/* GLOBAL RECENT ACTIVITY (HIGHEST 20) */}
               <div className="bg-white/95 p-6 rounded-[3rem] border border-white shadow-2xl space-y-5">
                 <div className="flex items-center justify-between px-2">
                   <h3 className="text-lg font-black text-[#2E0B5E] font-noto flex items-center gap-2">
@@ -538,7 +525,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                        </div>
                     </div>
                   )) : (
-                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/20">
+                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/30">
                        <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No History Found</p>
                     </div>
                   )}
@@ -548,7 +535,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
           )}
 
           {view === 'details' && selectedUser && (
-             <div className="animate-in slide-in-from-right-10 duration-500 pb-20 space-y-8">
+             <div className="animate-in slide-in-from-right-10 duration-500 pb-20 space-y-8 pt-2">
                 <div className="flex items-center gap-5 px-1">
                    <button onClick={() => setView('list')} className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:scale-90 transition-all border border-white/20 shadow-xl">
                       <ArrowLeft size={24} strokeWidth={3} />
@@ -589,7 +576,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       </div>
                    </div>
 
-                   {/* USER SPECIFIC CALL HISTORY (HIGHEST 20) */}
                    <div className="space-y-4 pt-4 border-t border-slate-50">
                       <h4 className="text-[11px] font-black text-[#2E0B5E] uppercase tracking-widest px-1 flex items-center gap-2">
                         <HistoryIcon size={14} className="text-[#8D30F4]" /> কল হিস্ট্রি (সর্বশেষ ২০টি)
@@ -639,7 +625,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                                <span className="text-[10px] font-black uppercase">{editActive ? 'Enabled' : 'Disabled'}</span>
                             </button>
                          </div>
-                         
                          <div className="space-y-4">
                             <div className="space-y-1.5">
                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">REVE API Key</label>
@@ -656,11 +641,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                          </div>
                       </div>
 
-                      <button 
-                        onClick={handleUserUpdate} 
-                        disabled={isUpdatingUser} 
-                        className="w-full h-16 premium-btn text-white font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 text-lg"
-                      >
+                      <button onClick={handleUserUpdate} disabled={isUpdatingUser} className="w-full h-16 premium-btn text-white font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 text-lg">
                          {isUpdatingUser ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> Save Profile Changes</>}
                       </button>
                    </div>
@@ -670,57 +651,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         </>
       )}
 
-      {/* Reject Confirmation Modal */}
+      {/* Reject Confirmation Modal - Tighter Design */}
       {rejectConfirm && (
-        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-3xl z-[1001] flex items-center justify-center p-8 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(0,0,0,0.15)] text-center animate-in zoom-in-95 duration-500 border border-red-50">
-              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-red-100">
-                 <AlertTriangle size={40} />
+        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-3xl z-[1001] flex items-center justify-center p-6 animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3rem] p-8 shadow-[0_40px_100px_rgba(0,0,0,0.15)] text-center animate-in zoom-in-95 duration-500 border border-red-50">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner border border-red-100">
+                 <AlertTriangle size={32} />
               </div>
-              <h3 className="text-2xl font-black text-slate-800 font-noto tracking-tight">আপনি কি নিশ্চিত?</h3>
-              <p className="text-[13px] font-bold text-slate-400 mt-3 font-noto leading-relaxed">
+              <h3 className="text-xl font-black text-slate-800 font-noto tracking-tight">আপনি কি নিশ্চিত?</h3>
+              <p className="text-[12px] font-bold text-slate-400 mt-2 font-noto leading-relaxed">
                  <span className="text-red-500">{rejectConfirm.madrasahs?.name}</span> এর <span className="text-slate-800">{rejectConfirm.amount} ৳</span> রিচার্জ রিকোয়েস্ট বাতিল করতে চাচ্ছেন।
               </p>
-              <div className="flex flex-col gap-3 mt-10">
-                 <button 
-                    onClick={rejectTransaction} 
-                    disabled={isRejecting} 
-                    className="w-full py-5 bg-red-500 text-white font-black rounded-full shadow-xl shadow-red-100 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-widest"
-                 >
+              <div className="flex flex-col gap-2 mt-8">
+                 <button onClick={rejectTransaction} disabled={isRejecting} className="w-full py-4 bg-red-500 text-white font-black rounded-full shadow-xl shadow-red-100 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest">
                     {isRejecting ? <Loader2 className="animate-spin" size={18} /> : 'হ্যাঁ, বাতিল করুন'}
                  </button>
-                 <button 
-                    onClick={() => setRejectConfirm(null)} 
-                    disabled={isRejecting}
-                    className="w-full py-4 bg-slate-50 text-slate-400 font-black rounded-full active:scale-95 transition-all text-xs uppercase tracking-widest"
-                 >
-                    পিছনে যান
-                 </button>
+                 <button onClick={() => setRejectConfirm(null)} disabled={isRejecting} className="w-full py-3 bg-slate-50 text-slate-400 font-black rounded-full active:scale-95 transition-all text-[10px] uppercase tracking-widest">পিজনে যান</button>
               </div>
            </div>
         </div>
       )}
 
-      {/* Status Modal - Premium Redesign */}
+      {/* Status Modal - Tighter Design */}
       {statusModal.show && (
-        <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-sm rounded-[4rem] p-12 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
-             <div className={`w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-10 transition-transform duration-700 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 'bg-red-50 text-red-500 border-red-100'} border-4 shadow-inner`}>
-                {statusModal.type === 'success' ? <CheckCircle2 size={64} strokeWidth={2.5} /> : <AlertCircle size={64} strokeWidth={2.5} />}
+        <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 transition-transform duration-700 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 'bg-red-50 text-red-500 border-red-100'} border-4 shadow-inner`}>
+                {statusModal.type === 'success' ? <CheckCircle2 size={40} strokeWidth={2.5} /> : <AlertCircle size={40} strokeWidth={2.5} />}
              </div>
-             <h3 className="text-[26px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{statusModal.title}</h3>
-             <p className="text-[14px] font-bold text-slate-400 mt-4 font-noto px-4 leading-relaxed">{statusModal.message}</p>
-             
-             <button 
-                onClick={() => setStatusModal({ ...statusModal, show: false })} 
-                className={`w-full mt-10 py-5 font-black rounded-full text-sm uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-500 text-white shadow-red-100'}`}
-             >
+             <h3 className="text-[22px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{statusModal.title}</h3>
+             <p className="text-[13px] font-bold text-slate-400 mt-3 font-noto px-4 leading-relaxed">{statusModal.message}</p>
+             <button onClick={() => setStatusModal({ ...statusModal, show: false })} className={`w-full mt-8 py-4 font-black rounded-full text-xs uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-500 text-white shadow-red-100'}`}>
                 {lang === 'bn' ? 'ঠিক আছে' : 'Continue'}
              </button>
-
-             {/* Decorative Background Elements */}
-             <div className={`absolute top-[-10%] right-[-10%] w-24 h-24 blur-[50px] opacity-10 rounded-full ${statusModal.type === 'success' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-             <div className={`absolute bottom-[-10%] left-[-10%] w-24 h-24 blur-[50px] opacity-10 rounded-full ${statusModal.type === 'success' ? 'bg-blue-400' : 'bg-orange-400'}`}></div>
           </div>
         </div>
       )}
