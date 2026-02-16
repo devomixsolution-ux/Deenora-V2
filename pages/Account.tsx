@@ -290,10 +290,10 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
       )}
 
       {/* Profile Identity Card Section - Optimized for screenshot design */}
-      <div className="relative pt-16 px-1">
-        <div className="bg-white rounded-[4rem] p-10 pt-24 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
+      <div className="relative pt-20 px-1">
+        <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
           
-          {/* Circular Overlapping Avatar */}
+          {/* Circular Overlapping Avatar - Adjusted to fix overlap */}
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-20">
             <div className="relative">
               {/* Outer soft glow */}
@@ -323,7 +323,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
           </div>
 
           <div className="space-y-6">
-             <div className="space-y-2">
+             <div className="space-y-3">
                 <h2 className="text-[34px] font-black text-[#2E0B5E] font-noto tracking-tight leading-tight">
                   {madrasah.name}
                 </h2>
@@ -335,10 +335,10 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
              </div>
              
              {/* Digital ID Certificate Box */}
-             <div className="pt-6">
+             <div className="pt-4">
                 <div 
                   onClick={() => copyToClipboard(madrasah.id)}
-                  className="bg-slate-50/70 p-5 rounded-[2.5rem] border border-slate-100 flex items-center gap-5 active:scale-95 transition-all cursor-pointer hover:bg-white group/uuid"
+                  className="bg-slate-50/70 p-5 rounded-[2.5rem] border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all cursor-pointer hover:bg-white group/uuid"
                 >
                   <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#8D30F4] shadow-sm border border-slate-50">
                      <Fingerprint size={24} />
