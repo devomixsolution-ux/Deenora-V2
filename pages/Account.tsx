@@ -168,7 +168,13 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
       const { error: uploadError } = await supabase.storage.from('madrasah-assets').upload(`logos/${fileName}`, file);
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('madrasah-assets').getPublicUrl(`logos/${fileName}`);
+      
+      // PERSIST LOGO URL TO DATABASE
+      const { error: dbError } = await supabase.from('madrasahs').update({ logo_url: publicUrl }).eq('id', madrasah.id);
+      if (dbError) throw dbError;
+
       setLogoUrl(publicUrl);
+      if (onProfileUpdate) onProfileUpdate(); // Update app-level profile
     } catch (e: any) { alert(e.message); } finally { setSaving(false); }
   };
 
@@ -221,7 +227,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-36 relative">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-36 relative z-[100]">
       
       {/* Super Admin Control Hub */}
       {isSuperAdmin && (
@@ -291,7 +297,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
 
       {/* Profile Identity Card Section */}
       <div className="relative pt-20 px-1">
-        {/* CRITICAL FIX: Removed overflow-hidden from this container so the logo (-top-16) is not clipped */}
+        {/* FIXED: Removed overflow-hidden so the logo isn't clipped */}
         <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
           
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-20">
@@ -445,7 +451,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </button>
       </div>
 
-      {/* Edit Profile Modal - CRITICAL FIX: Ensure fixed backdrop is relative to screen, not a parent container */}
       {isEditingProfile && (
         <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-center justify-center p-4">
            <div className="bg-white w-full max-w-sm rounded-[4rem] p-8 shadow-2xl space-y-8 animate-in zoom-in-95 duration-500 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -492,7 +497,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-2xl z-[9999] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_40px_100px_rgba(141,48,244,0.3)] border border-[#8D30F4]/10 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
              <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-green-100">
-                <CheckCircle2 size={48} strokeWidth={2.5} />
+                <CheckCircle2 size={56} strokeWidth={2.5} />
              </div>
              <h3 className="text-xl font-black text-slate-800 font-noto tracking-tight">{t('success', lang)}</h3>
              <p className="text-[10px] font-bold text-slate-400 mt-3 uppercase tracking-[0.2em] font-noto">Profile updated successfully</p>
