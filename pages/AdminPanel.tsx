@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, Transaction, AdminSMSStock } from '../types';
 
@@ -19,7 +19,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [madrasahs, setMadrasahs] = useState<MadrasahWithStats[]>([]);
   const [pendingTrans, setPendingTrans] = useState<Transaction[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
-  const [selectedUserHistory, setSelectedUserHistory] = useState<Transaction[]>([]);
+  const [selectedUserHistory, setSelectedUserHistory] = useState<any[]>([]);
   const [adminStock, setAdminStock] = useState<AdminSMSStock | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -132,16 +132,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const fetchDynamicStats = async (madrasahId: string) => {
     setIsRefreshingStats(true);
     try {
-      const [studentsRes, classesRes] = await Promise.all([
+      const [studentsRes, classesRes, recentCallsRes] = await Promise.all([
         supabase.from('students').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
         supabase.from('classes').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
-        supabase.from('transactions').select('*').eq('madrasah_id', madrasahId).order('created_at', { ascending: false }).limit(5)
+        supabase.from('recent_calls').select('*').eq('madrasah_id', madrasahId).order('called_at', { ascending: false }).limit(5)
       ]);
       setUserStats({
         students: studentsRes.count || 0,
         classes: classesRes.count || 0
       });
-      if (studentsRes.data) setSelectedUserHistory(studentsRes.data as any);
+      if (recentCallsRes.data) setSelectedUserHistory(recentCallsRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -162,6 +162,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     fetchDynamicStats(m.id);
   };
 
+  const handleUserUpdate = async () => {
+    if (!selectedUser) return;
+    setIsUpdatingUser(true);
+    try {
+      const { error } = await supabase.from('madrasahs').update({
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        login_code: editLoginCode.trim(),
+        is_active: editActive,
+        reve_api_key: editReveApiKey.trim() || null,
+        reve_secret_key: editReveSecretKey.trim() || null,
+        reve_caller_id: editReveCallerId.trim() || null
+      }).eq('id', selectedUser.id);
+
+      if (error) throw error;
+      
+      setStatusModal({ show: true, type: 'success', title: 'Updated', message: 'User profile updated successfully.' });
+      fetchAllMadrasahs(); // Refresh the list in the background
+    } catch (err: any) {
+      setStatusModal({ show: true, type: 'error', title: 'Failed', message: err.message });
+    } finally {
+      setIsUpdatingUser(false);
+    }
+  };
+
   const approveTransaction = async (tr: Transaction) => {
     const sms = Number(smsToCredit[tr.id]);
     if (!sms || sms <= 0) {
@@ -169,6 +194,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       return;
     }
     try {
+      // Note: approve_payment_with_sms is a stored procedure (RPC) in the database
       const { error } = await supabase.rpc('approve_payment_with_sms', { 
         t_id: tr.id, 
         m_id: tr.madrasah_id, 
@@ -185,7 +211,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const filtered = useMemo(() => madrasahs.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase())), [madrasahs, searchQuery]);
 
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in">
+    <div className="space-y-6 pb-20 animate-in fade-in relative">
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24 text-white">
           <Loader2 className="animate-spin mb-4" size={40} />
@@ -264,7 +290,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
               <div className="space-y-3">
                 {filtered.length > 0 ? filtered.map(m => (
-                  <div key={m.id} onClick={() => handleUserClick(m)} className="bg-white/95 p-5 rounded-[2.2rem] border border-white/50 flex flex-col shadow-lg active:scale-[0.98] transition-all cursor-pointer">
+                  <div key={m.id} onClick={() => handleUserClick(m)} className="bg-white/95 p-5 rounded-[2.2rem] border border-white/50 flex flex-col shadow-lg active:scale-[0.98] transition-all cursor-pointer hover:border-[#8D30F4]/30">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 border border-slate-100 shadow-inner shrink-0 overflow-hidden">
@@ -331,6 +357,101 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                 )}
               </div>
             </div>
+          )}
+
+          {view === 'details' && selectedUser && (
+             <div className="animate-in slide-in-from-right-10 duration-500 pb-20 space-y-8">
+                <div className="flex items-center gap-5 px-1">
+                   <button onClick={() => setView('list')} className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:scale-90 transition-all border border-white/20 shadow-xl">
+                      <ArrowLeft size={24} strokeWidth={3} />
+                   </button>
+                   <div className="min-w-0">
+                      <h1 className="text-xl font-black text-white font-noto truncate leading-tight drop-shadow-md">Madrasah Details</h1>
+                      <p className="text-[9px] font-black text-white/60 uppercase tracking-widest mt-1">UUID: {selectedUser.id}</p>
+                   </div>
+                </div>
+
+                <div className="bg-white rounded-[3.5rem] p-8 shadow-2xl border border-white/50 space-y-8">
+                   <div className="flex flex-col items-center text-center">
+                      <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center border-4 border-white shadow-xl overflow-hidden mb-4">
+                         {selectedUser.logo_url ? <img src={selectedUser.logo_url} className="w-full h-full object-cover" /> : <UserIcon size={40} className="text-slate-300" />}
+                      </div>
+                      <h2 className="text-2xl font-black text-[#2E0B5E] font-noto">{selectedUser.name}</h2>
+                      <div className={`mt-3 px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${editActive ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                         <Activity size={12} /> {editActive ? 'Active Portal' : 'Access Restricted'}
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-slate-50 p-4 rounded-3xl text-center border border-slate-100">
+                         <h5 className="text-xl font-black text-[#2E0B5E]">{userStats.students}</h5>
+                         <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Students</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-3xl text-center border border-slate-100">
+                         <h5 className="text-xl font-black text-[#2E0B5E]">{userStats.classes}</h5>
+                         <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Classes</p>
+                      </div>
+                      <div className="bg-[#F2EBFF] p-4 rounded-3xl text-center border border-[#8D30F4]/10">
+                         <h5 className="text-xl font-black text-[#8D30F4]">{selectedUser.sms_balance || 0}</h5>
+                         <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">SMS Bal</p>
+                      </div>
+                   </div>
+
+                   <div className="space-y-6 pt-4 border-t border-slate-50">
+                      <div className="grid grid-cols-1 gap-5">
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Madrasah Name</label>
+                            <input type="text" className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-black text-[#2E0B5E] outline-none focus:border-[#8D30F4]/20" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                         </div>
+                         <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Phone</label>
+                               <input type="tel" className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-black text-[#2E0B5E] outline-none" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Login Pin</label>
+                               <input type="text" className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-black text-[#8D30F4] outline-none" value={editLoginCode} onChange={(e) => setEditLoginCode(e.target.value)} />
+                            </div>
+                         </div>
+                      </div>
+
+                      <div className="bg-slate-50 p-6 rounded-[2.5rem] space-y-6">
+                         <div className="flex items-center justify-between px-1">
+                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                               <Sliders size={14} className="text-[#8D30F4]" /> Advanced Config
+                            </h4>
+                            <button onClick={() => setEditActive(!editActive)} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all ${editActive ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                               {editActive ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                               <span className="text-[10px] font-black uppercase">{editActive ? 'Enabled' : 'Disabled'}</span>
+                            </button>
+                         </div>
+                         
+                         <div className="space-y-4">
+                            <div className="space-y-1.5">
+                               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">REVE API Key</label>
+                               <input type="text" className="w-full h-12 bg-white border border-slate-100 rounded-xl px-4 font-bold text-xs" value={editReveApiKey} onChange={(e) => setEditReveApiKey(e.target.value)} placeholder="System Default Used" />
+                            </div>
+                            <div className="space-y-1.5">
+                               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">REVE Secret</label>
+                               <input type="text" className="w-full h-12 bg-white border border-slate-100 rounded-xl px-4 font-bold text-xs" value={editReveSecretKey} onChange={(e) => setEditReveSecretKey(e.target.value)} placeholder="System Default Used" />
+                            </div>
+                            <div className="space-y-1.5">
+                               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Override Sender ID</label>
+                               <input type="text" className="w-full h-12 bg-white border border-slate-100 rounded-xl px-4 font-black text-sm" value={editReveCallerId} onChange={(e) => setEditReveCallerId(e.target.value)} placeholder="e.g. 12345" />
+                            </div>
+                         </div>
+                      </div>
+
+                      <button 
+                        onClick={handleUserUpdate} 
+                        disabled={isUpdatingUser} 
+                        className="w-full h-16 premium-btn text-white font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 text-lg"
+                      >
+                         {isUpdatingUser ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> Save Profile Changes</>}
+                      </button>
+                   </div>
+                </div>
+             </div>
           )}
         </>
       )}
