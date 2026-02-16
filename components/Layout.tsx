@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { Home, User, BookOpen, Wallet, ShieldCheck, BarChart3, Clock, RefreshCw, Smartphone } from 'lucide-react';
+import { Home, User, BookOpen, Wallet, ShieldCheck, BarChart3, CreditCard, RefreshCw, Smartphone } from 'lucide-react';
 import { View, Language, Madrasah, Teacher } from '../types';
 import { t } from '../translations';
 
 interface LayoutProps {
+  // Use React.ReactNode instead of React.Node for children type
   children: React.ReactNode;
   currentView: View;
   setView: (view: View) => void;
@@ -78,7 +79,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
           {isSuperAdmin ? (
             <>
               <button onClick={() => setView('admin-approvals')} className={`relative flex flex-col items-center gap-0.5 transition-all flex-1 ${isTabActive('approvals') ? 'text-[#8D30F4]' : 'text-[#A179FF]'}`}>
-                <Clock size={22} strokeWidth={isTabActive('approvals') ? 3 : 2} />
+                <CreditCard size={22} strokeWidth={isTabActive('approvals') ? 3 : 2} />
                 <span className={`text-[10px] font-black font-noto ${isTabActive('approvals') ? 'opacity-100' : 'opacity-60'}`}>{t('approvals', lang)}</span>
                 {isTabActive('approvals') && <div className="absolute -top-1 w-1 h-1 rounded-full bg-[#8D30F4]"></div>}
               </button>

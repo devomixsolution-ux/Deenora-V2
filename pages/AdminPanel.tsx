@@ -228,9 +228,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
   const approveTransaction = async (tr: Transaction) => {
     const sms = Number(smsToCredit[tr.id]);
-    if (!sms || sms <= 0) return showStatus('error', 'সতর্কতা!', 'অনুগ্রহ করে সঠিক SMS সংখ্যা লিখুন');
+    if (isNaN(sms) || sms <= 0) return showStatus('error', 'সতর্কতা!', 'অনুগ্রহ করে সঠিক SMS সংখ্যা লিখুন');
     try {
-      const { error } = await supabase.rpc('approve_payment_with_sms', { t_id: tr.id, m_id: tr.madrasah_id, sms_to_give: sms });
+      const { data, error } = await supabase.rpc('approve_payment_with_sms', { t_id: tr.id, m_id: tr.madrasah_id, sms_to_give: sms });
       if (error) throw error;
       
       setPendingTrans(p => p.filter(t => t.id !== tr.id));
@@ -261,6 +261,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     <div className="space-y-6 pb-20 animate-in fade-in">
       {view === 'dashboard' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-5">
+           <div className="flex items-center justify-between px-2">
+              <h1 className="text-xl font-black text-white font-noto drop-shadow-md">সিস্টেম ড্যাশবোর্ড</h1>
+           </div>
+
            {/* Summary Stats Row 1 */}
            <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border border-white shadow-xl flex flex-col items-center text-center">
@@ -364,6 +368,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
       {view === 'list' && (
         <div className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+              <h1 className="text-xl font-black text-white font-noto drop-shadow-md">মাদরাসা লিস্ট</h1>
+          </div>
+
           {/* Distributed SMS Summary Card */}
           <div className="bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border border-white shadow-2xl flex items-center justify-between text-[#2E0B5E] relative overflow-hidden">
              <div className="absolute -right-4 -bottom-4 opacity-5 text-[#8D30F4]">
@@ -384,14 +392,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
           {/* Search Header */}
           <div className="relative group px-1">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#8D30F4] transition-colors" size={18} />
-            <input type="text" placeholder="Search Madrasah..." className="w-full pl-14 pr-14 py-5 bg-white border border-[#8D30F4]/5 rounded-[2rem] outline-none text-slate-800 font-bold shadow-xl focus:border-[#8D30F4]/20 transition-all" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <input type="text" placeholder="Search Madrasah..." className="w-full h-14 pl-14 pr-14 bg-white border border-[#8D30F4]/5 rounded-[2rem] outline-none text-slate-800 font-bold shadow-xl focus:border-[#8D30F4]/20 transition-all" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             <button onClick={initData} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8D30F4] p-2 hover:bg-slate-50 rounded-xl transition-all">
                <RefreshCcw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
 
           <div className="space-y-3">
-            {filtered.map(m => (
+            {loading && madrasahs.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-20 text-white/40">
+                  <Loader2 className="animate-spin mb-3" size={32} />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Loading Records...</p>
+               </div>
+            ) : filtered.map(m => (
               <div key={m.id} onClick={() => handleUserClick(m)} className="bg-white/95 backdrop-blur-md p-5 rounded-[2.2rem] border border-white/50 flex flex-col shadow-lg active:scale-[0.98] transition-all cursor-pointer group">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-4 min-w-0">
@@ -513,7 +526,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                     <input type="tel" className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-5 font-black text-slate-800" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
                  </div>
                  <div className="space-y-1.5">
-                    <label className="text-[10px) font-black text-slate-400 uppercase tracking-widest px-1">Madrasah Login Code</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Madrasah Login Code</label>
                     <div className="relative">
                        <input type="text" className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-5 font-black text-[#8D30F4]" value={editLoginCode} onChange={(e) => setEditLoginCode(e.target.value)} />
                        <Key size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
@@ -560,6 +573,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
       {view === 'approvals' && (
         <div className="space-y-8 px-1">
+          <div className="flex items-center justify-between px-2">
+              <h1 className="text-xl font-black text-white font-noto drop-shadow-md">পেমেন্ট ও রিচার্জ রিকোয়েস্ট</h1>
+          </div>
+          
           {/* Pending Section */}
           <div className="space-y-4">
             <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] px-2 opacity-80 flex items-center gap-2">
