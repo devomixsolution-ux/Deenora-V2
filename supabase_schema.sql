@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
 
 -- ১০. অ্যাডমিন এসএমএস স্টক (Admin SMS Stock)
 CREATE TABLE IF NOT EXISTS public.admin_sms_stock (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT '00000000-0000-0000-0000-000000000002',
     remaining_sms INTEGER DEFAULT 0,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
@@ -141,12 +141,10 @@ DROP POLICY IF EXISTS "Public Stock Access" ON public.admin_sms_stock;
 CREATE POLICY "Public Stock Access" ON public.admin_sms_stock FOR ALL USING (true);
 
 -- ১২. স্টোরেজ বাকেট (Storage Bucket) তৈরি
--- বাকেট তৈরি করার SQL
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('madrasah-assets', 'madrasah-assets', true)
 ON CONFLICT (id) DO NOTHING;
 
--- স্টোরেজ পলিসি (যাতে সবাই ছবি দেখতে পারে এবং আপলোড করতে পারে)
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING ( bucket_id = 'madrasah-assets' );
 
@@ -190,7 +188,7 @@ SELECT id, email, split_part(email, '@', 1), true, false
 FROM auth.users
 ON CONFLICT (id) DO NOTHING;
 
--- ১৫. অন্যান্য ফাংশন (RPC)
+-- ১৫. এসএমএস পাঠানোর ফাংশন (RPC)
 CREATE OR REPLACE FUNCTION public.send_bulk_sms_rpc(p_madrasah_id UUID, p_student_ids UUID[], p_message TEXT)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v_count INTEGER; v_current_balance INTEGER;
@@ -202,9 +200,32 @@ BEGIN
     RETURN jsonb_build_object('success', true, 'new_balance', v_current_balance - v_count);
 END; $$;
 
--- ১৬. ইনিশিয়াল ডেটা
+-- ১৬. পেমেন্ট অনুমোদন ও এসএমএস যোগ করার ফাংশন (RPC)
+CREATE OR REPLACE FUNCTION public.approve_payment_with_sms(t_id UUID, m_id UUID, sms_to_give INTEGER)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    -- ১. ট্রানজ্যাকশন স্ট্যাটাস পরিবর্তন
+    UPDATE public.transactions 
+    SET status = 'approved' 
+    WHERE id = t_id;
+
+    -- ২. মাদরাসার ব্যালেন্স আপডেট
+    UPDATE public.madrasahs 
+    SET sms_balance = COALESCE(sms_balance, 0) + sms_to_give 
+    WHERE id = m_id;
+
+    -- ৩. অ্যাডমিন স্টক আপডেট (Explicit WHERE clause added to avoid PostgREST safety errors)
+    UPDATE public.admin_sms_stock 
+    SET remaining_sms = remaining_sms - sms_to_give, 
+        updated_at = now()
+    WHERE id = '00000000-0000-0000-0000-000000000002';
+END; $$;
+
+-- ১৭. ইনিশিয়াল ডেটা
 INSERT INTO public.system_settings (id, reve_api_key, reve_secret_key, reve_caller_id, bkash_number)
 VALUES ('00000000-0000-0000-0000-000000000001', 'aa407e1c6629da8e', '91051e7e', 'Deenora', '০১৭৬৬-XXXXXX')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.admin_sms_stock (remaining_sms) VALUES (10000) ON CONFLICT DO NOTHING;
+INSERT INTO public.admin_sms_stock (id, remaining_sms) 
+VALUES ('00000000-0000-0000-0000-000000000002', 10000) 
+ON CONFLICT (id) DO NOTHING;

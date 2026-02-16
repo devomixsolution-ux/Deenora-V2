@@ -37,7 +37,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
   const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0, totalTeachers: 0 });
   const [selectedUser, setSelectedUser] = useState<MadrasahWithStats | null>(null);
-  const [userStats, setUserStats] = useState({ students: 0, classes: 0 });
+  const [userStats, setUserStats] = useState({ students: 0, classes: 0, teachers: 0 });
   
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -134,14 +134,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const fetchDynamicStats = async (madrasahId: string) => {
     setIsRefreshingStats(true);
     try {
-      const [studentsRes, classesRes, recentCallsRes] = await Promise.all([
+      const [studentsRes, classesRes, teachersRes, recentCallsRes] = await Promise.all([
         supabase.from('students').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
         supabase.from('classes').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
+        supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
         supabase.from('recent_calls').select('*').eq('madrasah_id', madrasahId).order('called_at', { ascending: false }).limit(5)
       ]);
       setUserStats({
         students: studentsRes.count || 0,
-        classes: classesRes.count || 0
+        classes: classesRes.count || 0,
+        teachers: teachersRes.count || 0
       });
       if (recentCallsRes.data) setSelectedUserHistory(recentCallsRes.data);
     } catch (err) {
@@ -391,7 +393,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-3">
+                   <div className="grid grid-cols-2 gap-3">
                       <div className="bg-slate-50 p-4 rounded-3xl text-center border border-slate-100">
                          <h5 className="text-xl font-black text-[#2E0B5E]">{userStats.students}</h5>
                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Students</p>
@@ -399,6 +401,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       <div className="bg-slate-50 p-4 rounded-3xl text-center border border-slate-100">
                          <h5 className="text-xl font-black text-[#2E0B5E]">{userStats.classes}</h5>
                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Classes</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-3xl text-center border border-slate-100">
+                         <h5 className="text-xl font-black text-[#2E0B5E]">{userStats.teachers}</h5>
+                         <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Teachers</p>
                       </div>
                       <div className="bg-[#F2EBFF] p-4 rounded-3xl text-center border border-[#8D30F4]/10">
                          <h5 className="text-xl font-black text-[#8D30F4]">{selectedUser.sms_balance || 0}</h5>
