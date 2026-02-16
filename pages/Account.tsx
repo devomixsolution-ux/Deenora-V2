@@ -1,6 +1,5 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-/* Removed 'Tool' which does not exist in lucide-react */
 import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle, GraduationCap, ChevronLeft, ArrowRight, LayoutDashboard, Settings2, X, Sparkles, Box, ShieldAlert, Award } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, View } from '../types';
@@ -132,9 +131,9 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         reve_caller_id: reveCallerId.trim()
       } : null);
 
-      alert(lang === 'bn' ? 'সব তথ্য আপডেট হয়েছে!' : 'Profile Updated!');
+      alert(t('success', lang));
     } catch (err: any) { 
-      alert(lang === 'bn' ? `এরর: ${err.message}` : `Error: ${err.message}`);
+      alert(t('login_error', lang) + ': ' + err.message);
     } finally { setSaving(false); }
   };
 
@@ -178,9 +177,9 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-8 border-4 border-red-500/30">
            <AlertTriangle size={48} className="text-red-300" />
         </div>
-        <h3 className="text-2xl font-black font-noto mb-4">প্রোফাইল পাওয়া যায়নি!</h3>
+        <h3 className="text-2xl font-black font-noto mb-4">{t('no_classes', lang)}</h3>
         <button onClick={onLogout} className="w-full py-5 bg-white text-red-600 font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">
-          <LogOut size={22} /> লগ আউট করুন
+          <LogOut size={22} /> {t('logout', lang)}
         </button>
       </div>
     );
@@ -326,7 +325,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 </h2>
                 <div className="flex justify-center">
                    <div className="inline-flex px-6 py-2.5 bg-[#F2F5FF] text-[#A179FF] rounded-full text-[10px] font-black uppercase tracking-[0.3em] font-noto">
-                     {isTeacher ? 'Authorized Teacher' : 'Portal Admin'}
+                     {isTeacher ? t('teacher_portal', lang) : t('admin_portal', lang)}
                    </div>
                 </div>
              </div>
@@ -340,7 +339,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                      <Fingerprint size={24} />
                   </div>
                   <div className="flex-1 text-left min-w-0">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Digital Certificate UUID</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{t('madrasah_uuid', lang)}</p>
                     <p className="text-[12px] font-black text-[#8D30F4] tracking-tight truncate">
                       {madrasah.id}
                     </p>
@@ -355,7 +354,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 <StatCard icon={Users} value={stats.students} label={t('students', lang)} colorClass="bg-purple-600" delay="duration-300" />
                 <StatCard icon={Layers} value={stats.classes} label={t('classes', lang)} colorClass="bg-blue-600" delay="duration-500" />
                 <StatCard icon={GraduationCap} value={stats.teachers} label={t('teachers', lang)} colorClass="bg-emerald-600" delay="duration-700" />
-                <StatCard icon={Zap} value={madrasah.sms_balance || 0} label="Remaining SMS" colorClass="bg-amber-600" delay="duration-1000" />
+                <StatCard icon={Zap} value={madrasah.sms_balance || 0} label={t('wallet', lang)} colorClass="bg-amber-600" delay="duration-1000" />
              </div>
           </div>
         </div>
@@ -373,14 +372,14 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
            <div className="grid grid-cols-2 gap-5">
               <BentoAction 
                 icon={UserPlus} 
-                title="Manage teachers" 
+                title={t('manage_teachers', lang)} 
                 desc="Access Controls" 
                 onClick={() => setView('teachers')} 
                 theme="bg-gradient-to-br from-[#8D30F4] to-[#A179FF]" 
               />
               <BentoAction 
                 icon={Database} 
-                title="Backup & restore" 
+                title={t('backup_restore', lang)} 
                 desc="Backup Hub" 
                 onClick={() => setView('data-management')} 
                 theme="bg-gradient-to-br from-indigo-500 to-indigo-700" 
@@ -397,8 +396,8 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 <Edit3 size={22} />
               </div>
               <div className="text-left">
-                <h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">Profile Settings</h5>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Update Name & Branding</p>
+                <h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">{t('profile_settings', lang)}</h5>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('branding', lang)}</p>
               </div>
             </div>
             <ChevronRight size={22} className="text-slate-200 group-hover:text-[#8D30F4] transition-all" />
@@ -411,8 +410,8 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
               <Languages size={22} />
             </div>
             <div className="text-left">
-              <h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">Language (ভাষা)</h5>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Select Language</p>
+              <h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">{t('language', lang)}</h5>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('change_lang', lang)}</p>
             </div>
           </div>
           <div className="flex p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
@@ -427,8 +426,8 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
               <LogOut size={22} />
             </div>
             <div className="text-left">
-              <h5 className="text-[17px] font-black text-red-600 font-noto">Logout</h5>
-              <p className="text-[10px] font-bold text-red-300 uppercase tracking-widest mt-1">Logout of System</p>
+              <h5 className="text-[17px] font-black text-red-600 font-noto">{t('logout', lang)}</h5>
+              <p className="text-[10px] font-bold text-red-300 uppercase tracking-widest mt-1">{t('logout_system', lang)}</p>
             </div>
           </div>
           <ChevronRight size={22} className="text-red-100 group-hover:text-red-500 transition-all" />
@@ -444,7 +443,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                     <Edit3 size={28} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-[#2E0B5E] font-noto tracking-tight">তথ্য সংশোধন</h3>
+                    <h3 className="text-2xl font-black text-[#2E0B5E] font-noto tracking-tight">{t('edit_account_info', lang)}</h3>
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Profile Metadata</p>
                   </div>
                 </div>
@@ -453,19 +452,19 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
 
               <div className="space-y-6">
                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Organization Name</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t('madrasah_name', lang)}</label>
                     <input type="text" className="w-full h-16 bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 font-black text-[#2E0B5E] text-lg outline-none focus:border-[#8D30F4]/30" value={newName} onChange={(e) => setNewName(e.target.value)} />
                  </div>
                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Contact Phone</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t('madrasah_phone', lang)}</label>
                     <input type="tel" className="w-full h-16 bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 font-black text-[#2E0B5E] text-lg outline-none focus:border-[#8D30F4]/30" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
                  </div>
               </div>
 
               <div className="flex gap-4 pt-2">
-                 <button onClick={() => setIsEditingProfile(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 font-black rounded-3xl text-sm active:scale-95 transition-all">Cancel</button>
+                 <button onClick={() => setIsEditingProfile(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 font-black rounded-3xl text-sm active:scale-95 transition-all">{t('cancel_btn', lang)}</button>
                  <button onClick={handleUpdate} disabled={saving} className="flex-[2] py-5 bg-[#8D30F4] text-white font-black rounded-3xl text-sm shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
-                    {saving ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> Save Changes</>}
+                    {saving ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> {t('save_changes', lang)}</>}
                  </button>
               </div>
            </div>

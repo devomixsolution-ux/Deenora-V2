@@ -124,11 +124,11 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
     try {
       const selectedStudents = students.filter(s => selectedIds.has(s.id));
       await smsApi.sendBulk(madrasahId, selectedStudents, selectedTemplate.body);
-      alert(lang === 'bn' ? 'এসএমএস সফলভাবে পাঠানো হয়েছে' : 'SMS sent successfully');
+      alert(t('sms_success', lang));
       setIsSelectionMode(false);
       setSelectedIds(new Set());
     } catch (err: any) {
-      alert(lang === 'bn' ? 'ব্যার্থ হয়েছে: ' + err.message : 'Failed: ' + err.message);
+      alert(t('login_error', lang) + ': ' + err.message);
     } finally { setSending(false); }
   };
 
@@ -172,7 +172,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                   <button onClick={toggleSelectAll}
                     className={`shrink-0 h-10 px-3.5 rounded-2xl transition-all active:scale-95 border flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-wider ${allFilteredSelected ? 'bg-white text-[#8D30F4] border-white shadow-xl' : 'bg-white/20 text-white border-white/20'}`}>
                     <ListChecks size={18} strokeWidth={3} />
-                    {allFilteredSelected ? (lang === 'bn' ? 'মুছুন' : 'Clear') : (lang === 'bn' ? 'সব' : 'All')}
+                    {allFilteredSelected ? t('clear', lang) : t('all', lang)}
                   </button>
                 )}
                 <button onClick={() => { setIsSelectionMode(!isSelectionMode); if (isSelectionMode) setSelectedIds(new Set()); }}
@@ -208,7 +208,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                 </div>
               ) : (
                 <div className="w-11 h-11 rounded-2xl flex flex-col items-center justify-center border shrink-0 bg-[#F2EBFF] border-[#8D30F4]/10 text-[#8D30F4] shadow-inner">
-                  <span className="text-[7px] font-black opacity-40 uppercase leading-none">Roll</span>
+                  <span className="text-[7px] font-black opacity-40 uppercase leading-none">{t('roll', lang)}</span>
                   <span className="text-base font-black leading-none mt-1">{student.roll || '-'}</span>
                 </div>
               )}
@@ -238,7 +238,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
               <button onClick={() => setShowTemplateMenu(!showTemplateMenu)} className={`w-full h-[60px] flex items-center justify-between px-6 rounded-2xl text-sm font-black transition-all border-2 ${selectedTemplate ? 'bg-[#8D30F4]/5 border-[#8D30F4]/30 text-[#8D30F4]' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
                 <div className="flex items-center gap-3 truncate">
                   <BookOpen size={20} className="text-[#8D30F4]" />
-                  <span className="truncate font-noto">{selectedTemplate ? selectedTemplate.title : (lang === 'bn' ? 'মেসেজ টেমপ্লেট' : 'Message Template')}</span>
+                  <span className="truncate font-noto">{selectedTemplate ? selectedTemplate.title : t('template_title', lang)}</span>
                 </div>
                 <ChevronDown size={20} className={`transition-transform duration-300 ${showTemplateMenu ? 'rotate-180' : ''}`} />
               </button>
@@ -263,7 +263,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                   className={`h-[48px] rounded-full flex items-center justify-center gap-2 font-black text-[10px] tracking-tight uppercase shadow-lg transition-all ${selectedTemplate ? 'bg-[#8D30F4] text-white' : 'bg-slate-100 text-slate-300 opacity-50'}`}
                 >
                   {sending ? <Loader2 className="animate-spin" size={16} /> : <MessageSquare size={16} fill="currentColor" />} 
-                  SYSTEM SMS
+                  {t('system_sms', lang)}
                 </button>
               )}
               {canSendFreeSMS && (
@@ -272,14 +272,14 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                   disabled={!selectedTemplate} 
                   className={`h-[48px] rounded-full flex items-center justify-center gap-2 font-black text-[10px] tracking-tight uppercase shadow-lg transition-all ${selectedTemplate ? 'bg-[#1A0B2E] text-white' : 'bg-slate-100 text-slate-300 opacity-50'}`}
                 >
-                  <Smartphone size={16} fill="currentColor" /> SIM SMS (FREE)
+                  <Smartphone size={16} fill="currentColor" /> {t('native_sms', lang)}
                 </button>
               )}
             </div>
             
             <div className="flex items-center justify-center gap-2 pt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-[#8D30F4] animate-pulse"></div>
-              <p className="text-[10px] font-black text-[#8D30F4] uppercase tracking-[0.2em]">{selectedIds.size} SELECTED</p>
+              <p className="text-[10px] font-black text-[#8D30F4] uppercase tracking-[0.2em]">{selectedIds.size} {t('selected', lang)}</p>
             </div>
           </div>
         </div>

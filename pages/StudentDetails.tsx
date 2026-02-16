@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Edit3, User as UserIcon, Smartphone, PhoneCall, UserCheck, MessageCircle, Hash, BookOpen, Phone, Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
 import { Student, Language } from '../types';
 import { supabase } from '../supabase';
+import { t } from '../translations';
 
 interface StudentDetailsProps {
   student: Student;
@@ -53,7 +54,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
       if (error) throw error;
       
       if (triggerRefresh) triggerRefresh();
-      onBack(); // Go back to student list
+      onBack();
     } catch (err: any) {
       alert(err.message);
       setIsDeleting(false);
@@ -98,7 +99,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
            
            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#F2EBFF] rounded-lg border border-[#8D30F4]/10">
              <Hash size={12} className="text-[#8D30F4]" />
-             <p className="text-[11px] font-black text-[#8D30F4] uppercase tracking-widest leading-none">Roll: {student.roll || '-'}</p>
+             <p className="text-[11px] font-black text-[#8D30F4] uppercase tracking-widest leading-none">{t('roll', lang)}: {student.roll || '-'}</p>
            </div>
         </div>
 
@@ -130,7 +131,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
                  <UserCheck size={18} />
               </div>
               <div className="min-w-0">
-                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Guardian Name</p>
+                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t('guardian_name', lang)}</p>
                  <p className="text-[14px] font-black text-[#2E0B5E] truncate font-noto">{student.guardian_name || 'N/A'}</p>
               </div>
            </div>
@@ -141,7 +142,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
                    <Smartphone size={18} />
                 </div>
                 <div className="min-w-0">
-                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Guardian Phone (Primary)</p>
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t('guardian_phone', lang)}</p>
                    <p className="text-[15px] font-black text-[#2E0B5E] tracking-tight">{student.guardian_phone}</p>
                 </div>
               </div>
@@ -154,7 +155,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
                      <Smartphone size={18} />
                   </div>
                   <div className="min-w-0">
-                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Guardian Phone 2</p>
+                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t('guardian_phone_2', lang)}</p>
                      <p className="text-[15px] font-black text-[#2E0B5E] tracking-tight">{student.guardian_phone_2}</p>
                   </div>
                 </div>
@@ -163,7 +164,6 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[1000] flex items-center justify-center p-8 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-300">
@@ -171,9 +171,9 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
                 <AlertTriangle size={40} />
              </div>
              <div>
-                <h3 className="text-xl font-black text-slate-800 font-noto">ছাত্রের তথ্য ডিলিট</h3>
+                <h3 className="text-xl font-black text-slate-800 font-noto">{t('confirm_delete', lang)}</h3>
                 <p className="text-[11px] font-bold text-slate-400 mt-2 uppercase tracking-wider px-4 leading-relaxed">
-                  আপনি কি নিশ্চিতভাবে <span className="text-red-500">"{student.student_name}"</span> এর সকল তথ্য মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।
+                  {lang === 'bn' ? `আপনি কি নিশ্চিতভাবে "${student.student_name}" এর সকল তথ্য মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।` : `Are you sure you want to delete all info for "${student.student_name}"? This cannot be undone.`}
                 </p>
              </div>
              <div className="flex flex-col gap-3 pt-2">
@@ -183,7 +183,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
                   className="w-full py-5 bg-red-500 text-white font-black rounded-full shadow-xl shadow-red-100 active:scale-95 transition-all flex items-center justify-center text-md gap-3"
                 >
                   {isDeleting ? <Loader2 className="animate-spin" size={22} /> : (
-                    <><Trash2 size={20} /> নিশ্চিত করুন</>
+                    <><Trash2 size={20} /> {t('confirm_btn', lang)}</>
                   )}
                 </button>
                 <button 
@@ -191,7 +191,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
                   disabled={isDeleting}
                   className="w-full py-4 bg-slate-50 text-slate-400 font-black rounded-full active:scale-95 transition-all text-sm uppercase tracking-widest"
                 >
-                  বাতিল
+                  {t('cancel_btn', lang)}
                 </button>
              </div>
           </div>

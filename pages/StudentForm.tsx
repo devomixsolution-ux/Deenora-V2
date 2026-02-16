@@ -103,7 +103,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
     if (phone.length < 10 || phone.length > 15) {
       setErrorModal({ 
         show: true, 
-        message: lang === 'bn' ? 'সঠিক ১০-১৫ ডিজিটের মোবাইল নম্বর দিন' : 'Enter a valid 10-15 digit phone number' 
+        message: t('invalid_phone', lang)
       });
       return;
     }
@@ -136,7 +136,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
     } catch (err: any) { 
       let msg = err.message;
       if (err.code === '23505') {
-        msg = lang === 'bn' ? 'এই রোল নম্বরটি এই ক্লাসে ইতিমধ্যে ব্যবহৃত হয়েছে' : 'This roll number is already used in this class';
+        msg = t('duplicate_roll', lang);
       }
       setErrorModal({ show: true, message: msg });
     } finally { setLoading(false); }
@@ -181,7 +181,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
              
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Hash size={14} className="text-[#8D30F4]" /> Roll</label>
+                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Hash size={14} className="text-[#8D30F4]" /> {t('roll', lang)}</label>
                   <input 
                     type="number" 
                     className="w-full h-[64px] px-6 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-[#2D3142] font-black text-xl outline-none text-center focus:border-[#8D30F4]/30 focus:bg-white transition-all shadow-inner" 
@@ -190,7 +190,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><List size={14} className="text-[#8D30F4]" /> Class</label>
+                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><List size={14} className="text-[#8D30F4]" /> {t('classes', lang)}</label>
                   <div 
                     onClick={() => setShowClassModal(true)} 
                     className="w-full h-[64px] px-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all shadow-inner"
@@ -203,11 +203,11 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
 
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Phone size={14} className="text-[#8D30F4]" /> Primary & WA (15D)</label>
+                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Phone size={14} className="text-[#8D30F4]" /> {t('phone_primary_wa', lang)}</label>
                   <input type="tel" required className="w-full h-[64px] px-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-[#2D3142] font-black text-sm outline-none focus:border-[#8D30F4]/30 focus:bg-white transition-all shadow-inner" value={phone} onChange={(e) => handlePhoneChange(e.target.value, setPhone)} placeholder="Max 15 digits" />
                 </div>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Phone size={14} className="text-[#8D30F4]" /> Phone 2 (15D)</label>
+                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Phone size={14} className="text-[#8D30F4]" /> {t('phone_secondary_15', lang)}</label>
                   <input type="tel" className="w-full h-[64px] px-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-[#2D3142] font-black text-sm outline-none focus:border-[#8D30F4]/30 focus:bg-white transition-all shadow-inner" value={phone2} onChange={(e) => handlePhoneChange(e.target.value, setPhone2)} placeholder="Max 15 digits" />
                 </div>
              </div>
@@ -236,7 +236,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
                   <BookOpen size={32} />
                </div>
                <div>
-                  <h2 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">ক্লাস বাছাই করুন</h2>
+                  <h2 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">{t('select_class', lang)}</h2>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Select a class</p>
                </div>
             </div>
