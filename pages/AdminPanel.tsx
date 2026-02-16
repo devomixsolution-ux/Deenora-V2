@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// Added missing AlertTriangle import
-import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap, Banknote } from 'lucide-react';
+import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap, Banknote, PhoneCall } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, Transaction, AdminSMSStock } from '../types';
 
@@ -21,6 +20,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [pendingTrans, setPendingTrans] = useState<Transaction[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
   const [selectedUserHistory, setSelectedUserHistory] = useState<any[]>([]);
+  const [globalRecentCalls, setGlobalRecentCalls] = useState<any[]>([]);
   const [adminStock, setAdminStock] = useState<AdminSMSStock | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,7 +39,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [rejectConfirm, setRejectConfirm] = useState<Transaction | null>(null);
   const [isRejecting, setIsRejecting] = useState(false);
 
-  const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0, totalTeachers: 0, totalDistributedSMS: 0 });
+  const [globalStats, setGlobalStats] = useState({ 
+    totalStudents: 0, 
+    totalClasses: 0, 
+    totalTeachers: 0, 
+    totalDistributedSMS: 0,
+    totalSentSMS: 0,
+    currentInUserWallets: 0 
+  });
   const [selectedUser, setSelectedUser] = useState<MadrasahWithStats | null>(null);
   const [userStats, setUserStats] = useState({ students: 0, classes: 0, teachers: 0 });
   
@@ -53,24 +60,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
   const [isUpdatingUser, setIsUpdatingUser] = useState(false);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const fetchGlobalCounts = async () => {
-    // Summing sms_count from approved transactions to get the total SMS ever given (allocated)
-    const [studentsRes, classesRes, teachersRes, smsAllocRes] = await Promise.all([
+    // We calculate "Total Sent" as: (Total Allocated via Transactions) - (Current sum of all User Balances)
+    const [studentsRes, classesRes, teachersRes, smsAllocRes, currentBalRes] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }),
       supabase.from('classes').select('*', { count: 'exact', head: true }),
       supabase.from('teachers').select('*', { count: 'exact', head: true }),
-      supabase.from('transactions').select('sms_count').eq('status', 'approved')
+      supabase.from('transactions').select('sms_count').eq('status', 'approved'),
+      supabase.from('madrasahs').select('sms_balance')
     ]);
 
-    const totalAllocatedSMS = smsAllocRes.data?.reduce((sum, t) => sum + (Number(t.sms_count) || 0), 0) || 0;
+    const totalAllocated = smsAllocRes.data?.reduce((sum, t) => sum + (Number(t.sms_count) || 0), 0) || 0;
+    const totalInWallets = currentBalRes.data?.reduce((sum, m) => sum + (Number(m.sms_balance) || 0), 0) || 0;
+    
+    // Usage = Allocated - Unused
+    const sentCount = Math.max(0, totalAllocated - totalInWallets);
 
     return {
       totalStudents: studentsRes.count || 0,
       totalClasses: classesRes.count || 0,
       totalTeachers: teachersRes.count || 0,
-      totalDistributedSMS: totalAllocatedSMS
+      totalDistributedSMS: totalAllocated,
+      totalSentSMS: sentCount,
+      currentInUserWallets: totalInWallets
     };
   };
 
@@ -86,6 +99,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       .order('created_at', { ascending: false });
     
     if (error) throw error;
+    return data || [];
+  };
+
+  const fetchGlobalRecentCalls = async () => {
+    const { data } = await supabase
+      .from('recent_calls')
+      .select('*, students(student_name), madrasahs(name)')
+      .order('called_at', { ascending: false })
+      .limit(20);
     return data || [];
   };
 
@@ -108,10 +130,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     let isMounted = true;
     try {
       if (view === 'list' || view === 'dashboard') {
-        const [mList, gStats, aStock] = await Promise.all([
+        const [mList, gStats, aStock, gCalls] = await Promise.all([
           fetchAllMadrasahs(),
           fetchGlobalCounts(),
-          fetchAdminStock()
+          fetchAdminStock(),
+          fetchGlobalRecentCalls()
         ]);
         if (isMounted) {
           setMadrasahs(mList.map(m => {
@@ -124,6 +147,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
           }));
           setGlobalStats(gStats);
           setAdminStock(aStock);
+          setGlobalRecentCalls(gCalls);
         }
       }
       if (view === 'approvals') {
@@ -162,7 +186,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         supabase.from('students').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
         supabase.from('classes').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
         supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
-        supabase.from('recent_calls').select('*').eq('madrasah_id', madrasahId).order('called_at', { ascending: false }).limit(5)
+        supabase.from('recent_calls').select('*, students(student_name)').eq('madrasah_id', madrasahId).order('called_at', { ascending: false }).limit(20)
       ]);
       const stats = {
         students: studentsRes.count || 0,
@@ -171,7 +195,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       };
       setUserStats(stats);
       
-      // Also update the list entry
       setMadrasahs(prev => prev.map(m => m.id === madrasahId ? { ...m, student_count: stats.students, class_count: stats.classes } : m));
 
       if (recentCallsRes.data) setSelectedUserHistory(recentCallsRes.data);
@@ -210,12 +233,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       };
 
       const { error } = await supabase.from('madrasahs').update(updateData).eq('id', selectedUser.id);
-
       if (error) throw error;
       
-      // Update local state immediately for performance
       setMadrasahs(prev => prev.map(m => m.id === selectedUser.id ? { ...m, ...updateData } : m));
-      
       setStatusModal({ show: true, type: 'success', title: lang === 'bn' ? 'সফল হয়েছে' : 'Updated', message: lang === 'bn' ? 'মাদরাসার তথ্য আপডেট করা হয়েছে।' : 'User profile updated successfully.' });
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'Failed', message: err.message });
@@ -231,12 +251,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       return;
     }
     try {
+      // Explicitly update the sms_count column in transactions record before/during approval
+      // This ensures global counts are accurate
+      const { error: updateErr } = await supabase.from('transactions').update({ sms_count: sms }).eq('id', tr.id);
+      if (updateErr) throw updateErr;
+
       const { error } = await supabase.rpc('approve_payment_with_sms', { 
         t_id: tr.id, 
         m_id: tr.madrasah_id, 
         sms_to_give: sms 
       });
       if (error) throw error;
+      
       setStatusModal({ show: true, type: 'success', title: 'সফল', message: 'রিচার্জ সফল হয়েছে' });
       initData();
     } catch (err: any) {
@@ -296,33 +322,69 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Active Portals</p>
                 </div>
                 
-                {/* REPLACED CURRENT BALANCE SUM WITH TOTAL EVER ALLOCATED BY ADMIN */}
-                <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center col-span-2 relative overflow-hidden group">
+                {/* SYSTEM STOCK & ALLOCATED ROW */}
+                <div className="bg-white/95 p-6 rounded-[2.5rem] border border-white shadow-xl flex flex-col items-center text-center col-span-2 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
-                    <Zap size={60} />
+                    <PieChart size={60} />
                   </div>
-                  <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-2 shadow-inner relative z-10">
-                    <MessageSquare size={20} />
+                  <div className="grid grid-cols-2 w-full divide-x divide-slate-100">
+                    <div>
+                      <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalDistributedSMS.toLocaleString('bn-BD')}</h4>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">মোট বিতরণকৃত SMS</p>
+                    </div>
+                    <div>
+                      <h4 className="text-2xl font-black text-[#8D30F4]">{globalStats.totalSentSMS.toLocaleString('bn-BD')}</h4>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">মোট প্রেরিত SMS (ইউসেজ)</p>
+                    </div>
                   </div>
-                  <h4 className="text-3xl font-black text-[#2E0B5E] relative z-10">{globalStats.totalDistributedSMS.toLocaleString('bn-BD')}</h4>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 relative z-10">Total SMS Allocated to Users</p>
+                </div>
+              </div>
+
+              {/* GLOBAL RECENT ACTIVITY (HIGHEST 20) */}
+              <div className="bg-white/95 p-6 rounded-[3rem] border border-white shadow-2xl space-y-5">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="text-lg font-black text-[#2E0B5E] font-noto flex items-center gap-2">
+                    <PhoneCall size={20} className="text-[#8D30F4]" /> সাম্প্রতিক কলসমূহ (২০টি)
+                  </h3>
+                  <Clock size={18} className="text-slate-300" />
+                </div>
+                <div className="space-y-2.5 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                  {globalRecentCalls.length > 0 ? globalRecentCalls.map((call, idx) => (
+                    <div key={call.id} className="bg-slate-50/70 p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:bg-white transition-colors">
+                      <div className="min-w-0 flex-1">
+                         <div className="flex items-center gap-2 mb-1">
+                            <span className="w-6 h-6 rounded-lg bg-[#8D30F4]/10 text-[#8D30F4] text-[10px] font-black flex items-center justify-center shrink-0">{idx + 1}</span>
+                            <h5 className="font-black text-[#2E0B5E] text-sm truncate font-noto">{call.students?.student_name || 'N/A'}</h5>
+                         </div>
+                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter ml-8 truncate">Madrasah: {call.madrasahs?.name}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                         <p className="text-[10px] font-black text-[#8D30F4]">{new Date(call.called_at).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</p>
+                         <p className="text-[8px] font-bold text-slate-300">{new Date(call.called_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' })}</p>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="text-center py-10">
+                       <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest">No Activity Records</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="bg-white/95 p-8 rounded-[3rem] border border-white shadow-2xl space-y-8">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-black text-[#2E0B5E] font-noto">SMS Analytics</h3>
+                  <h3 className="text-lg font-black text-[#2E0B5E] font-noto">SMS Inventory</h3>
                   <Zap size={24} className="text-[#8D30F4]" fill="currentColor" />
                 </div>
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Global Stock</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">সিস্টেম স্টক</p>
                       <h5 className="text-xl font-black text-[#2E0B5E]">{adminStock?.remaining_sms || 0}</h5>
                     </div>
                     <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Allocated</p>
-                      <h5 className="text-xl font-black text-[#8D30F4]">{globalStats.totalDistributedSMS}</h5>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">ইউজার ওয়ালেট (মোট)</p>
+                      <h5 className="text-xl font-black text-[#8D30F4]">{globalStats.currentInUserWallets}</h5>
                     </div>
                   </div>
                 </div>
@@ -524,6 +586,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       <div className="bg-[#F2EBFF] p-4 rounded-3xl text-center border border-[#8D30F4]/10">
                          <h5 className="text-xl font-black text-[#8D30F4]">{selectedUser.sms_balance || 0}</h5>
                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">SMS Bal</p>
+                      </div>
+                   </div>
+
+                   {/* USER SPECIFIC CALL HISTORY (HIGHEST 20) */}
+                   <div className="space-y-4 pt-4 border-t border-slate-50">
+                      <h4 className="text-[11px] font-black text-[#2E0B5E] uppercase tracking-widest px-1 flex items-center gap-2">
+                        <HistoryIcon size={14} className="text-[#8D30F4]" /> কল হিস্ট্রি (সর্বশেষ ২০টি)
+                      </h4>
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                        {selectedUserHistory.length > 0 ? selectedUserHistory.map(call => (
+                          <div key={call.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
+                            <div className="min-w-0">
+                               <p className="text-sm font-black text-[#2E0B5E] font-noto truncate">{call.students?.student_name || 'N/A'}</p>
+                            </div>
+                            <div className="text-right shrink-0 ml-4">
+                               <p className="text-[10px] font-black text-[#8D30F4]">{new Date(call.called_at).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</p>
+                               <p className="text-[8px] font-bold text-slate-400">{new Date(call.called_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' })}</p>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="text-center py-6 text-slate-300 text-[10px] font-black uppercase">No Calls Found</div>
+                        )}
                       </div>
                    </div>
 
