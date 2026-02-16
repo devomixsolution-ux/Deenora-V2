@@ -365,10 +365,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                            <Clock size={12} /> {new Date(tr.created_at).toLocaleDateString('bn-BD')}
                         </div>
                       </div>
-                      <div className="px-1">
+                      <div className="px-1 space-y-1">
                         <p className="text-[15px] font-black text-slate-800 font-noto">{tr.madrasahs?.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-1">TrxID: <span className="text-[#8D30F4]">{tr.transaction_id}</span></p>
-                        <p className="text-[10px] font-bold text-slate-400">Sender: {tr.sender_phone || 'N/A'}</p>
+                        <div className="flex flex-col gap-0.5">
+                           <p className="text-[10px] font-bold text-slate-400">TrxID: <span className="text-[#8D30F4]">{tr.transaction_id}</span></p>
+                           <p className="text-[11px] font-black text-[#2E0B5E] flex items-center gap-1.5">
+                              <Smartphone size={12} className="text-[#8D30F4]" /> 
+                              বিকাশ নম্বর: <span className="text-slate-800">{tr.sender_phone || 'N/A'}</span>
+                           </p>
+                        </div>
                       </div>
                       <div className="flex flex-col gap-3">
                         <div className="flex gap-2 items-center">
@@ -407,6 +412,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                              </span>
                           </div>
                           <p className="text-[12px] font-black text-[#2E0B5E] font-noto truncate">{tr.madrasahs?.name}</p>
+                          <p className="text-[9px] font-bold text-slate-400 mt-1 flex items-center gap-1">
+                             <Smartphone size={10} /> বিকাশ: {tr.sender_phone || 'N/A'}
+                          </p>
                           <div className="flex items-center gap-2 mt-1.5 text-slate-400">
                              <Clock size={10} />
                              <p className="text-[9px] font-bold">{new Date(tr.created_at).toLocaleDateString('bn-BD')}</p>
