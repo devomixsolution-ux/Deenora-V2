@@ -125,13 +125,16 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchMadrasahProfile = async (userId: string) => {
+  const fetchMadrasahProfile = async (userId: string, retryCount = 0) => {
     try {
-      // ONLY FETCH - NO AUTO CREATION
       const { data } = await supabase.from('madrasahs').select('*').eq('id', userId).maybeSingle();
       if (data) {
         setMadrasah(data);
         offlineApi.setCache('profile', data);
+      } else if (retryCount < 2) {
+        // If trigger is a bit slow, wait 1 second and retry once
+        setTimeout(() => fetchMadrasahProfile(userId, retryCount + 1), 1000);
+        return;
       } else {
         setMadrasah(null);
       }

@@ -131,7 +131,24 @@ CREATE POLICY "Public Settings Access" ON public.system_settings FOR ALL USING (
 ALTER TABLE public.admin_sms_stock ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public Stock Access" ON public.admin_sms_stock FOR ALL USING (true);
 
--- ১২. ফাংশন: বাল্ক এসএমএস ব্যালেন্স আপডেট (RPC)
+-- ১২. স্বয়ংক্রিয় প্রোফাইল ক্রিয়েশন ট্রিগার (যাতে Auth ইউজার তৈরির সাথে সাথে ডাটাবেসে সেভ হয়)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.madrasahs (id, email, name, is_active, is_super_admin)
+  VALUES (new.id, new.email, split_part(new.email, '@', 1), true, false)
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ট্রিগারটি ড্রপ করে পুনরায় তৈরি করা
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ১৩. ফাংশন: বাল্ক এসএমএস ব্যালেন্স আপডেট (RPC)
 CREATE OR REPLACE FUNCTION public.send_bulk_sms_rpc(
     p_madrasah_id UUID,
     p_student_ids UUID[],
@@ -155,7 +172,7 @@ BEGIN
 END;
 $$;
 
--- ১৩. ফাংশন: পেমেন্ট অ্যাপ্রুভ এবং এসএমএস ক্রেডিট করা (RPC)
+-- ১৪. ফাংশন: পেমেন্ট অ্যাপ্রুভ এবং এসএমএস ক্রেডিট করা (RPC)
 CREATE OR REPLACE FUNCTION public.approve_payment_with_sms(
     t_id UUID,
     m_id UUID,
@@ -173,15 +190,15 @@ BEGIN
 END;
 $$;
 
--- ১৪. ডেটা ইনসার্ট (System Settings)
+-- ১৫. ডেটা ইনসার্ট (System Settings)
 INSERT INTO public.system_settings (id, reve_api_key, reve_secret_key, reve_caller_id, bkash_number)
 VALUES ('00000000-0000-0000-0000-000000000001', 'aa407e1c6629da8e', '91051e7e', 'Deenora', '০১৭৬৬-XXXXXX')
 ON CONFLICT (id) DO NOTHING;
 
--- ১৫. সুপার অ্যাডমিন ইনসার্ট
+-- ১৬. সুপার অ্যাডমিন ইনসার্ট
 INSERT INTO public.madrasahs (id, name, email, is_super_admin, is_active, login_code)
 VALUES ('fe678ac3-da4b-4b41-8688-b04aceb71959', 'Deenora Super Admin', 'kmibrahim@gmail.com', true, true, '269596')
 ON CONFLICT (id) DO UPDATE SET is_super_admin = true, login_code = '269596';
 
--- ১৬. ইনিশিয়াল এসএমএস স্টক
+-- ১৭. ইনিশিয়াল এসএমএস স্টক
 INSERT INTO public.admin_sms_stock (remaining_sms) VALUES (10000) ON CONFLICT DO NOTHING;
