@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle, GraduationCap, ChevronLeft, ArrowRight, LayoutDashboard, Settings2, X, Sparkles, Box, ShieldAlert, Award, CheckCircle2, Lock } from 'lucide-react';
+import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle, GraduationCap, ChevronLeft, ArrowRight, LayoutDashboard, Settings2, X, Sparkles, Box, ShieldAlert, Award, CheckCircle2, Lock, Terminal, Cpu } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, View } from '../types';
 import { t } from '../translations';
@@ -176,12 +176,11 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('madrasah-assets').getPublicUrl(`logos/${fileName}`);
       
-      // PERSIST LOGO URL TO DATABASE
       const { error: dbError } = await supabase.from('madrasahs').update({ logo_url: publicUrl }).eq('id', madrasah.id);
       if (dbError) throw dbError;
 
       setLogoUrl(publicUrl);
-      if (onProfileUpdate) onProfileUpdate(); // Update app-level profile
+      if (onProfileUpdate) onProfileUpdate();
     } catch (e: any) { alert(e.message); } finally { setSaving(false); }
   };
 
@@ -236,7 +235,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-36 relative z-10">
       
-      {/* Super Admin Control Hub Dashboard Card */}
       {isSuperAdmin && (
         <div className="bg-[#1A0B2E] p-8 rounded-[3.5rem] border border-white/10 shadow-2xl space-y-8 relative overflow-hidden group">
            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:rotate-12 transition-transform duration-1000">
@@ -293,7 +291,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>
       )}
 
-      {/* Profile Identity Card Section */}
       <div className="relative pt-20 px-1">
         <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
           
@@ -449,80 +446,103 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </button>
       </div>
 
-      {/* System Core Modal - Premium Design */}
+      {/* SYSTEM CORE UPDATE POPUP - ULTIMATE REDESIGN */}
       {isEditingGlobal && (
-        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-3xl z-[9001] flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-[0_50px_120px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-500 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-[#080A12]/90 backdrop-blur-3xl z-[9001] flex items-center justify-center p-6 animate-in fade-in duration-300">
+           <div className="bg-[#1A0B2E] w-full max-w-sm rounded-[3.5rem] shadow-[0_50px_150px_rgba(141,48,244,0.4)] animate-in zoom-in-95 duration-500 border border-white/10 overflow-hidden flex flex-col max-h-[92vh] relative">
               
-              <div className="p-10 pb-4 shrink-0 flex items-center justify-between">
-                 <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-[#1A0B2E] text-white rounded-[1.5rem] flex items-center justify-center shadow-xl border border-white/10">
-                       <Shield size={28} className="text-[#A179FF]" />
+              {/* Header Visual */}
+              <div className="p-10 pb-4 shrink-0 relative overflow-hidden">
+                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#8D30F4]/20 rounded-full blur-[60px]"></div>
+                 <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center gap-5">
+                       <div className="w-16 h-16 bg-[#8D30F4] text-white rounded-[1.8rem] flex items-center justify-center shadow-[0_0_30px_rgba(141,48,244,0.5)] border border-white/20 animate-pulse">
+                          <Shield size={32} strokeWidth={2.5} className="text-white" />
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-black text-white font-noto tracking-tight">System Core</h3>
+                          <p className="text-[9px] font-black text-[#A179FF] uppercase tracking-[0.3em] mt-1.5 flex items-center gap-2">
+                             <Terminal size={10} /> Kernel Control
+                          </p>
+                       </div>
                     </div>
-                    <div>
-                       <h3 className="text-2xl font-black text-[#2E0B5E] font-noto tracking-tight">System Core</h3>
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5">
-                          <Lock size={10} className="text-[#8D30F4]" /> Secure Global Settings
-                       </p>
-                    </div>
+                    <button onClick={() => setIsEditingGlobal(false)} className="w-12 h-12 bg-white/5 text-white/40 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-white/5 hover:text-white hover:bg-red-500/20"><X size={24} /></button>
                  </div>
-                 <button onClick={() => setIsEditingGlobal(false)} className="w-10 h-10 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center active:scale-90 transition-all"><X size={24} /></button>
               </div>
 
-              <div className="px-10 pb-10 space-y-6 overflow-y-auto custom-scrollbar flex-1">
-                 <div className="bg-[#F2EBFF]/50 p-6 rounded-[2rem] border border-[#8D30F4]/5 space-y-5">
-                    <div className="space-y-1.5">
-                       <label className="text-[10px] font-black text-[#8D30F4] uppercase tracking-widest block px-1">Global SMS Gateway</label>
-                       <input 
-                         type="text" 
-                         className="w-full h-14 bg-white border border-slate-100 rounded-2xl px-5 font-black text-slate-800 text-xs shadow-inner outline-none focus:border-[#8D30F4]/30" 
-                         value={globalSettings.reve_api_key} 
-                         onChange={(e) => setGlobalSettings({...globalSettings, reve_api_key: e.target.value})} 
-                         placeholder="Enter Master API Key" 
-                       />
+              <div className="px-10 pb-12 space-y-8 overflow-y-auto custom-scrollbar flex-1 relative z-10">
+                 {/* SMS Gateway Section */}
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-3 px-1">
+                       <Cpu size={14} className="text-[#A179FF]" />
+                       <h4 className="text-[10px] font-black text-white/50 uppercase tracking-[0.25em]">Gateway Protocols</h4>
                     </div>
-                    <div className="space-y-1.5">
-                       <label className="text-[10px] font-black text-[#8D30F4] uppercase tracking-widest block px-1">Secret Access Token</label>
-                       <input 
-                         type="text" 
-                         className="w-full h-14 bg-white border border-slate-100 rounded-2xl px-5 font-black text-slate-800 text-xs shadow-inner outline-none focus:border-[#8D30F4]/30" 
-                         value={globalSettings.reve_secret_key} 
-                         onChange={(e) => setGlobalSettings({...globalSettings, reve_secret_key: e.target.value})} 
-                         placeholder="Enter Master Secret" 
-                       />
-                    </div>
-                 </div>
-
-                 <div className="grid grid-cols-1 gap-5">
-                    <div className="space-y-1.5">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">Global Sender Identity</label>
-                       <input 
-                         type="text" 
-                         className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-5 font-black text-[#2E0B5E] text-base outline-none focus:border-[#8D30F4]/30" 
-                         value={globalSettings.reve_caller_id} 
-                         onChange={(e) => setGlobalSettings({...globalSettings, reve_caller_id: e.target.value})} 
-                         placeholder="e.g. Deenora" 
-                       />
-                    </div>
-                    <div className="space-y-1.5">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">System bKash Number</label>
-                       <input 
-                         type="text" 
-                         className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-5 font-black text-[#2E0B5E] text-base outline-none focus:border-[#8D30F4]/30" 
-                         value={globalSettings.bkash_number} 
-                         onChange={(e) => setGlobalSettings({...globalSettings, bkash_number: e.target.value})} 
-                         placeholder="01766-XXXXXX" 
-                       />
+                    
+                    <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/5 space-y-6">
+                       <div className="space-y-2">
+                          <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block px-1">Master API Key</label>
+                          <input 
+                            type="text" 
+                            className="w-full h-14 bg-[#080A12]/50 border border-white/10 rounded-2xl px-5 font-bold text-[#A179FF] text-xs shadow-inner outline-none focus:border-[#8D30F4]/50 focus:bg-[#080A12] transition-all" 
+                            value={globalSettings.reve_api_key} 
+                            onChange={(e) => setGlobalSettings({...globalSettings, reve_api_key: e.target.value})} 
+                            placeholder="REVE_GATEWAY_AUTH_KEY" 
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[9px] font-black text-[#A179FF] uppercase tracking-widest block px-1">Encryption Token</label>
+                          <input 
+                            type="password" 
+                            className="w-full h-14 bg-[#080A12]/50 border border-white/10 rounded-2xl px-5 font-bold text-[#A179FF] text-xs shadow-inner outline-none focus:border-[#8D30F4]/50 focus:bg-[#080A12] transition-all" 
+                            value={globalSettings.reve_secret_key} 
+                            onChange={(e) => setGlobalSettings({...globalSettings, reve_secret_key: e.target.value})} 
+                            placeholder="••••••••••••" 
+                          />
+                       </div>
                     </div>
                  </div>
 
-                 <button 
-                   onClick={handleSaveGlobalSettings} 
-                   disabled={saving} 
-                   className="w-full h-16 premium-btn text-white font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 text-lg border border-white/20"
-                 >
-                    {saving ? <Loader2 className="animate-spin" size={24} /> : <><Save size={22} /> Commit System Changes</>}
-                 </button>
+                 {/* Identity Section */}
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-3 px-1">
+                       <Fingerprint size={14} className="text-[#A179FF]" />
+                       <h4 className="text-[10px] font-black text-white/50 uppercase tracking-[0.25em]">Global Identities</h4>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-5">
+                       <div className="space-y-2">
+                          <label className="text-[9px] font-black text-white/40 uppercase tracking-widest block px-1">Global Caller ID</label>
+                          <input 
+                            type="text" 
+                            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-5 font-black text-white text-base outline-none focus:border-[#8D30F4]/50 transition-all" 
+                            value={globalSettings.reve_caller_id} 
+                            onChange={(e) => setGlobalSettings({...globalSettings, reve_caller_id: e.target.value})} 
+                            placeholder="e.g. Deenora" 
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[9px] font-black text-white/40 uppercase tracking-widest block px-1">Master Payment Number</label>
+                          <input 
+                            type="text" 
+                            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-5 font-black text-white text-base outline-none focus:border-[#8D30F4]/50 transition-all" 
+                            value={globalSettings.bkash_number} 
+                            onChange={(e) => setGlobalSettings({...globalSettings, bkash_number: e.target.value})} 
+                            placeholder="01766-XXXXXX" 
+                          />
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="pt-4">
+                    <button 
+                      onClick={handleSaveGlobalSettings} 
+                      disabled={saving} 
+                      className="w-full h-18 bg-gradient-to-r from-[#8D30F4] to-[#A179FF] text-white font-black rounded-full shadow-[0_15px_40px_rgba(141,48,244,0.4)] active:scale-95 transition-all flex items-center justify-center gap-3 text-lg border border-white/20 py-5"
+                    >
+                       {saving ? <Loader2 className="animate-spin" size={24} /> : <><RefreshCw size={22} /> Push System Changes</>}
+                    </button>
+                    <p className="text-[8px] font-bold text-white/20 text-center mt-5 uppercase tracking-[0.4em]">Core Version Protocol v2.5.1</p>
+                 </div>
               </div>
            </div>
         </div>
@@ -586,7 +606,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                {lang === 'bn' ? 'ঠিক আছে' : 'OK'}
              </button>
              
-             {/* Decorative Background Elements */}
              <div className="absolute top-[-10%] right-[-10%] w-24 h-24 blur-[50px] opacity-10 rounded-full bg-green-400"></div>
              <div className="absolute bottom-[-10%] left-[-10%] w-24 h-24 blur-[50px] opacity-10 rounded-full bg-blue-400"></div>
           </div>
