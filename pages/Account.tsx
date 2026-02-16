@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-/* Fix: Removed 'Tool' which does not exist in lucide-react and was unused */
+/* Removed 'Tool' which does not exist in lucide-react */
 import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle, GraduationCap, ChevronLeft, ArrowRight, LayoutDashboard, Settings2, X, Sparkles, Box, ShieldAlert, Award } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, View } from '../types';
@@ -289,14 +289,12 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>
       )}
 
-      {/* Profile Identity Card Section - Optimized for screenshot design */}
+      {/* Profile Identity Card Section */}
       <div className="relative pt-20 px-1">
         <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
           
-          {/* Circular Overlapping Avatar - Adjusted to fix overlap */}
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-20">
             <div className="relative">
-              {/* Outer soft glow */}
               <div className="absolute inset-[-15px] bg-gradient-to-br from-[#8D30F4] to-[#A179FF] rounded-full opacity-10 blur-2xl"></div>
               
               <div className="w-40 h-40 bg-white p-2.5 rounded-full shadow-2xl border-[12px] border-slate-50 flex items-center justify-center overflow-hidden">
@@ -309,7 +307,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 )}
               </div>
               
-              {/* Camera Action Button */}
               {!isTeacher && (
                 <button 
                   onClick={() => fileInputRef.current?.click()} 
@@ -334,7 +331,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 </div>
              </div>
              
-             {/* Digital ID Certificate Box */}
              <div className="pt-4">
                 <div 
                   onClick={() => copyToClipboard(madrasah.id)}
@@ -355,7 +351,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 </div>
              </div>
 
-             {/* Stat Tiles */}
              <div className="grid grid-cols-2 gap-4 mt-8 pt-4">
                 <StatCard icon={Users} value={stats.students} label={t('students', lang)} colorClass="bg-purple-600" delay="duration-300" />
                 <StatCard icon={Layers} value={stats.classes} label={t('classes', lang)} colorClass="bg-blue-600" delay="duration-500" />
@@ -366,7 +361,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>
       </div>
 
-      {/* Core Action Bento Grid */}
       {!isTeacher && !isSuperAdmin && (
         <div className="space-y-6 px-1">
            <div className="px-5 flex items-center justify-between">
@@ -395,7 +389,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>
       )}
 
-      {/* Settings List */}
       <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-50 divide-y divide-slate-50 overflow-hidden mx-1">
         {!isTeacher && (
           <button onClick={() => setIsEditingProfile(true)} className="w-full p-8 flex items-center justify-between group active:bg-slate-50 transition-all">
@@ -434,7 +427,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
               <LogOut size={22} />
             </div>
             <div className="text-left">
-              <h5 className="text-[17px] font-black text-red-600 font-noto">Logout and login</h5>
+              <h5 className="text-[17px] font-black text-red-600 font-noto">Logout</h5>
               <p className="text-[10px] font-bold text-red-300 uppercase tracking-widest mt-1">Logout of System</p>
             </div>
           </div>
@@ -442,7 +435,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </button>
       </div>
 
-      {/* Edit Modal */}
       {isEditingProfile && (
         <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[600] flex items-center justify-center p-6 animate-in fade-in">
            <div className="bg-white w-full max-w-sm rounded-[4rem] p-10 shadow-2xl space-y-10 animate-in zoom-in-95 duration-500 relative">

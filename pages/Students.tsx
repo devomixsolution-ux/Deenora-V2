@@ -218,7 +218,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
               </div>
             </div>
             {!isSelectionMode && (
-              <div className="flex items-center gap-5 shrink-0 ml-2">
+              <div className="flex items-center gap-6 shrink-0 ml-2">
                 <button onClick={(e) => { e.stopPropagation(); initiateNormalCall(student.id, student.guardian_phone); }} className="w-10 h-10 bg-[#8D30F4]/10 text-[#8D30F4] rounded-xl active:scale-90 transition-all border border-[#8D30F4]/10 flex items-center justify-center shadow-sm">
                   <Phone size={18} fill="currentColor" />
                 </button>

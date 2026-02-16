@@ -67,7 +67,6 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
         if (error) throw error;
         
         if (data) {
-          // Normalize Supabase data as it sometimes returns joined data differently
           const formattedCalls: RecentCall[] = (data as any[]).map(call => {
             const rawStudent = Array.isArray(call.students) ? call.students[0] : call.students;
             if (rawStudent) {
