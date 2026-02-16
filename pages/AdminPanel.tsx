@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 // Added missing AlertTriangle import
-import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap } from 'lucide-react';
+import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap, Banknote } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, Transaction, AdminSMSStock } from '../types';
 
@@ -39,7 +39,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [rejectConfirm, setRejectConfirm] = useState<Transaction | null>(null);
   const [isRejecting, setIsRejecting] = useState(false);
 
-  const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0, totalTeachers: 0 });
+  const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0, totalTeachers: 0, totalRevenue: 0 });
   const [selectedUser, setSelectedUser] = useState<MadrasahWithStats | null>(null);
   const [userStats, setUserStats] = useState({ students: 0, classes: 0, teachers: 0 });
   
@@ -85,15 +85,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   };
 
   const fetchGlobalCounts = async () => {
-    const [studentsRes, classesRes, teachersRes] = await Promise.all([
+    const [studentsRes, classesRes, teachersRes, revenueRes] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }),
       supabase.from('classes').select('*', { count: 'exact', head: true }),
-      supabase.from('teachers').select('*', { count: 'exact', head: true })
+      supabase.from('teachers').select('*', { count: 'exact', head: true }),
+      supabase.from('transactions').select('amount').eq('status', 'approved')
     ]);
+
+    const totalRev = revenueRes.data?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
+
     setGlobalStats({
       totalStudents: studentsRes.count || 0,
       totalClasses: classesRes.count || 0,
-      totalTeachers: teachersRes.count || 0
+      totalTeachers: teachersRes.count || 0,
+      totalRevenue: totalRev
     });
   };
 
@@ -119,8 +124,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
           class_count: existing?.class_count || 0 
         };
       }));
-      
-      // Gradually fetch stats for the first few if needed, or just let details handle it
     }
   };
 
@@ -264,19 +267,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/95 p-6 rounded-[2.5rem] border border-white shadow-xl flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-3 shadow-inner">
-                    <Users2 size={24} />
+                <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-2 shadow-inner">
+                    <Users2 size={20} />
                   </div>
-                  <h4 className="text-3xl font-black text-[#2E0B5E]">{madrasahs.length}</h4>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Madrasahs</p>
+                  <h4 className="text-2xl font-black text-[#2E0B5E]">{madrasahs.length}</h4>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Madrasahs</p>
                 </div>
-                <div className="bg-white/95 p-6 rounded-[2.5rem] border border-white shadow-xl flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-3 shadow-inner">
-                    <Activity size={24} />
+                <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-2 shadow-inner">
+                    <Activity size={20} />
                   </div>
-                  <h4 className="text-3xl font-black text-[#2E0B5E]">{madrasahs.filter(m => m.is_active).length}</h4>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Active Portals</p>
+                  <h4 className="text-2xl font-black text-[#2E0B5E]">{madrasahs.filter(m => m.is_active).length}</h4>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Active Portals</p>
+                </div>
+                
+                {/* NEW REVENUE CARD */}
+                <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center col-span-2 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                    <Banknote size={60} />
+                  </div>
+                  <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-2 shadow-inner relative z-10">
+                    <Banknote size={20} />
+                  </div>
+                  <h4 className="text-3xl font-black text-[#2E0B5E] relative z-10">{globalStats.totalRevenue.toLocaleString('bn-BD')} ৳</h4>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 relative z-10">Total Spend / Revenue</p>
                 </div>
               </div>
 
@@ -332,7 +347,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
               <div className="space-y-3">
                 {filtered.length > 0 ? filtered.map(m => (
-                  <div key={m.id} onClick={() => handleUserClick(m)} className="bg-white/95 p-5 rounded-[2.2rem] border border-white/50 flex flex-col shadow-lg active:scale-[0.98] transition-all cursor-pointer hover:border-[#8D30F4]/30">
+                  <div key={m.id} onClick={() => handleUserClick(m)} className="bg-white/95 p-5 rounded-[2.2rem] border border-white/50 shadow-lg active:scale-[0.98] transition-all cursor-pointer hover:border-[#8D30F4]/30">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 border border-slate-100 shadow-inner shrink-0 overflow-hidden">
