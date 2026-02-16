@@ -127,10 +127,13 @@ const App: React.FC = () => {
 
   const fetchMadrasahProfile = async (userId: string) => {
     try {
+      // ONLY FETCH - NO AUTO CREATION
       const { data } = await supabase.from('madrasahs').select('*').eq('id', userId).maybeSingle();
       if (data) {
         setMadrasah(data);
         offlineApi.setCache('profile', data);
+      } else {
+        setMadrasah(null);
       }
     } catch (err) {
       console.error(err);
@@ -162,8 +165,11 @@ const App: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] text-white">
-        <Loader2 className="animate-spin mb-4" size={40} />
-        <p className="font-black text-[10px] uppercase tracking-[0.2em] opacity-40">Loading Portal...</p>
+        <div className="relative">
+           <Loader2 className="animate-spin text-white mb-4" size={50} />
+           <RefreshCw className="absolute inset-0 m-auto animate-pulse opacity-20" size={20} />
+        </div>
+        <p className="font-black text-[10px] uppercase tracking-[0.2em] opacity-40">Connecting to Server...</p>
       </div>
     );
   }
