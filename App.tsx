@@ -14,7 +14,7 @@ import WalletSMS from './pages/WalletSMS';
 import DataManagement from './pages/DataManagement';
 import Teachers from './pages/Teachers';
 import { View, Class, Student, Language, Madrasah, Teacher } from './types';
-import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles } from 'lucide-react';
+import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles, ShieldAlert, Phone } from 'lucide-react';
 import { t } from './translations';
 
 const App: React.FC = () => {
@@ -64,11 +64,11 @@ const App: React.FC = () => {
     try {
       const { data } = await supabase
         .from('teachers')
-        .select('*, madrasahs(name, logo_url)')
+        .select('*, madrasahs(name, logo_url, is_active)')
         .eq('id', id)
         .maybeSingle();
       
-      if (data && data.is_active) {
+      if (data && data.is_active && data.madrasahs?.is_active) {
         setTeacher(data);
         localStorage.setItem('teacher_session', JSON.stringify(data));
         setMadrasah({ 
@@ -81,9 +81,9 @@ const App: React.FC = () => {
           is_active: true,
           created_at: data.created_at
         } as Madrasah);
-      } else if (data && !data.is_active) {
-        // Only logout if explicitly deactivated
-        logout();
+      } else if (data && (!data.is_active || !data.madrasahs?.is_active)) {
+        // Handle teacher or parent madrasah being inactive
+        setMadrasah(prev => prev ? { ...prev, is_active: false } : null);
       }
     } catch (e) {
       console.error("Teacher profile sync failed:", e);
@@ -92,7 +92,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initializeSession = async () => {
-      // 1. Check for Teacher session first (highest priority for offline/persistent)
+      // 1. Check for Teacher session first
       const savedTeacher = localStorage.getItem('teacher_session');
       if (savedTeacher) {
         try {
@@ -124,7 +124,6 @@ const App: React.FC = () => {
       if (currentSession) {
         await fetchMadrasahProfile(currentSession.user.id);
       } else {
-        // Final fallback: try to use cached profile if we were previously logged in as admin
         const cachedProfile = offlineApi.getCache('profile');
         if (cachedProfile) {
           setMadrasah(cachedProfile);
@@ -136,7 +135,6 @@ const App: React.FC = () => {
     initializeSession();
 
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string, session: any) => {
-      console.log("Supabase Auth Event:", event);
       setSession(session);
       
       if (session) {
@@ -164,7 +162,6 @@ const App: React.FC = () => {
       } else if (error && retryCount < 3) {
         setTimeout(() => fetchMadrasahProfile(userId, retryCount + 1), 1500);
       } else {
-        // Only nullify if we're sure no profile exists for this ID
         if (!madrasah) setMadrasah(null);
         setLoading(false);
       }
@@ -283,6 +280,37 @@ const App: React.FC = () => {
   }
 
   if (!session && !teacher) return <Auth lang={lang} />;
+
+  // Account Suspended Screen
+  if (madrasah && madrasah.is_active === false) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#080A12] px-10 text-white text-center">
+        <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-8 border-4 border-red-500/30 animate-pulse">
+           <ShieldAlert size={48} className="text-red-500" />
+        </div>
+        <h3 className="text-2xl font-black font-noto mb-4 text-red-500">অ্যাকাউন্ট স্থগিত করা হয়েছে</h3>
+        <p className="text-sm font-bold opacity-80 font-noto leading-relaxed mb-10 max-w-xs mx-auto">
+          দুঃখিত, আপনার মাদরাসার পোর্টালে প্রবেশাধিকার সাময়িকভাবে বন্ধ করা হয়েছে। বিস্তারিত জানতে বা পুনরায় চালু করতে অ্যাডমিনের সাথে যোগাযোগ করুন।
+        </p>
+        
+        <div className="w-full space-y-4 max-w-xs">
+          <a 
+            href="tel:01700000000" 
+            className="w-full py-5 bg-white text-[#080A12] font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+          >
+            <Phone size={20} /> সাপোর্ট কল করুন
+          </a>
+          
+          <button 
+            onClick={logout} 
+            className="w-full py-4 bg-transparent text-white font-bold rounded-full border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+          >
+            <LogOut size={16} /> লগ আউট
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Profile not found error screen
   if (session && !madrasah && !loading) {

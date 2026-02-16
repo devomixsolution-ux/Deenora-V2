@@ -110,14 +110,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     
     if (error) throw error;
     if (data) {
-      const withStats = await Promise.all(data.map(async (m) => {
-        const [stdCount, clsCount] = await Promise.all([
-          supabase.from('students').select('*', { count: 'exact', head: true }).eq('madrasah_id', m.id),
-          supabase.from('classes').select('*', { count: 'exact', head: true }).eq('madrasah_id', m.id)
-        ]);
-        return { ...m, student_count: stdCount.count || 0, class_count: clsCount.count || 0 };
+      // Don't refetch all stats if we already have them to prevent UI lag
+      setMadrasahs(data.map(m => {
+        const existing = madrasahs.find(ex => ex.id === m.id);
+        return { 
+          ...m, 
+          student_count: existing?.student_count || 0, 
+          class_count: existing?.class_count || 0 
+        };
       }));
-      setMadrasahs(withStats);
+      
+      // Gradually fetch stats for the first few if needed, or just let details handle it
     }
   };
 
@@ -144,11 +147,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
         supabase.from('recent_calls').select('*').eq('madrasah_id', madrasahId).order('called_at', { ascending: false }).limit(5)
       ]);
-      setUserStats({
+      const stats = {
         students: studentsRes.count || 0,
         classes: classesRes.count || 0,
         teachers: teachersRes.count || 0
-      });
+      };
+      setUserStats(stats);
+      
+      // Also update the list entry
+      setMadrasahs(prev => prev.map(m => m.id === madrasahId ? { ...m, student_count: stats.students, class_count: stats.classes } : m));
+
       if (recentCallsRes.data) setSelectedUserHistory(recentCallsRes.data);
     } catch (err) {
       console.error(err);
@@ -174,7 +182,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     if (!selectedUser) return;
     setIsUpdatingUser(true);
     try {
-      const { error } = await supabase.from('madrasahs').update({
+      const updateData = {
         name: editName.trim(),
         phone: editPhone.trim(),
         login_code: editLoginCode.trim(),
@@ -182,12 +190,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         reve_api_key: editReveApiKey.trim() || null,
         reve_secret_key: editReveSecretKey.trim() || null,
         reve_caller_id: editReveCallerId.trim() || null
-      }).eq('id', selectedUser.id);
+      };
+
+      const { error } = await supabase.from('madrasahs').update(updateData).eq('id', selectedUser.id);
 
       if (error) throw error;
       
+      // Update local state immediately for performance
+      setMadrasahs(prev => prev.map(m => m.id === selectedUser.id ? { ...m, ...updateData } : m));
+      
       setStatusModal({ show: true, type: 'success', title: lang === 'bn' ? 'সফল হয়েছে' : 'Updated', message: lang === 'bn' ? 'মাদরাসার তথ্য আপডেট করা হয়েছে।' : 'User profile updated successfully.' });
-      fetchAllMadrasahs(); // Refresh the list in the background
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'Failed', message: err.message });
     } finally {
