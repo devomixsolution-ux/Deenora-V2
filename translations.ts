@@ -127,7 +127,8 @@ export const translations = {
     change_lang: 'ভাষা পরিবর্তন',
     logout_system: 'সিস্টেম থেকে বের হন',
     cancel_btn: 'বাতিল করুন',
-    confirm_btn: 'নিশ্চিত করুন'
+    confirm_btn: 'নিশ্চিত করুন',
+    sender_id: 'সেন্ডার আইডি'
   },
   en: {
     home: 'Home',
@@ -254,7 +255,8 @@ export const translations = {
     change_lang: 'Change Language',
     logout_system: 'Logout of System',
     cancel_btn: 'Cancel',
-    confirm_btn: 'Confirm'
+    confirm_btn: 'Confirm',
+    sender_id: 'Sender ID'
   }
 };
 

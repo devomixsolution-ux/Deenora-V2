@@ -323,7 +323,16 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 <h2 className="text-[34px] font-black text-[#2E0B5E] font-noto tracking-tight leading-tight">
                   {madrasah.name}
                 </h2>
-                <div className="flex justify-center">
+                
+                {/* Sender ID Display Section */}
+                <div className="flex flex-col items-center gap-2">
+                   <div className="inline-flex px-6 py-2 bg-[#F2EBFF] text-[#8D30F4] rounded-2xl border border-[#8D30F4]/10 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                         <ShieldCheck size={14} className="text-[#8D30F4]" />
+                         <span className="text-[11px] font-black uppercase tracking-[0.1em]">{t('sender_id', lang)}:</span>
+                         <span className="text-[12px] font-black tracking-tight">{madrasah.reve_caller_id || 'DEFAULT'}</span>
+                      </div>
+                   </div>
                    <div className="inline-flex px-6 py-2.5 bg-[#F2F5FF] text-[#A179FF] rounded-full text-[10px] font-black uppercase tracking-[0.3em] font-noto">
                      {isTeacher ? t('teacher_portal', lang) : t('admin_portal', lang)}
                    </div>
