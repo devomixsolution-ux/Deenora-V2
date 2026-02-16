@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap } from 'lucide-react';
+// Added missing AlertTriangle import
+import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, Transaction, AdminSMSStock } from '../types';
 
@@ -34,6 +35,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     title: '',
     message: ''
   });
+
+  const [rejectConfirm, setRejectConfirm] = useState<Transaction | null>(null);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   const [globalStats, setGlobalStats] = useState({ totalStudents: 0, totalClasses: 0, totalTeachers: 0 });
   const [selectedUser, setSelectedUser] = useState<MadrasahWithStats | null>(null);
@@ -182,7 +186,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
 
       if (error) throw error;
       
-      setStatusModal({ show: true, type: 'success', title: 'Updated', message: 'User profile updated successfully.' });
+      setStatusModal({ show: true, type: 'success', title: lang === 'bn' ? 'সফল হয়েছে' : 'Updated', message: lang === 'bn' ? 'মাদরাসার তথ্য আপডেট করা হয়েছে।' : 'User profile updated successfully.' });
       fetchAllMadrasahs(); // Refresh the list in the background
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'Failed', message: err.message });
@@ -211,14 +215,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     }
   };
 
-  const rejectTransaction = async (tr: Transaction) => {
+  const rejectTransaction = async () => {
+    if (!rejectConfirm) return;
+    setIsRejecting(true);
     try {
-      const { error } = await supabase.from('transactions').update({ status: 'rejected' }).eq('id', tr.id);
+      const { error } = await supabase.from('transactions').update({ status: 'rejected' }).eq('id', rejectConfirm.id);
       if (error) throw error;
+      setRejectConfirm(null);
       setStatusModal({ show: true, type: 'success', title: 'বাতিল', message: 'পেমেন্ট রিকোয়েস্ট বাতিল করা হয়েছে' });
       initData();
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -386,7 +395,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                           />
                           <button onClick={() => approveTransaction(tr)} className="px-8 h-14 bg-green-500 text-white font-black rounded-[1.5rem] text-sm active:scale-95 transition-all shadow-lg shadow-green-100">অনুমোদন</button>
                         </div>
-                        <button onClick={() => rejectTransaction(tr)} className="w-full h-12 bg-red-50 text-red-500 font-black rounded-[1.5rem] text-xs active:scale-95 transition-all border border-red-100">রিকোয়েস্ট বাতিল করুন</button>
+                        <button onClick={() => setRejectConfirm(tr)} className="w-full h-12 bg-red-50 text-red-500 font-black rounded-[1.5rem] text-xs active:scale-95 transition-all border border-red-100">রিকোয়েস্ট বাতিল করুন</button>
                       </div>
                     </div>
                   )) : (
@@ -536,16 +545,57 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         </>
       )}
 
-      {/* Status Modal */}
+      {/* Reject Confirmation Modal */}
+      {rejectConfirm && (
+        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-3xl z-[1001] flex items-center justify-center p-8 animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(0,0,0,0.15)] text-center animate-in zoom-in-95 duration-500 border border-red-50">
+              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-red-100">
+                 <AlertTriangle size={40} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-800 font-noto tracking-tight">আপনি কি নিশ্চিত?</h3>
+              <p className="text-[13px] font-bold text-slate-400 mt-3 font-noto leading-relaxed">
+                 <span className="text-red-500">{rejectConfirm.madrasahs?.name}</span> এর <span className="text-slate-800">{rejectConfirm.amount} ৳</span> রিচার্জ রিকোয়েস্ট বাতিল করতে চাচ্ছেন।
+              </p>
+              <div className="flex flex-col gap-3 mt-10">
+                 <button 
+                    onClick={rejectTransaction} 
+                    disabled={isRejecting} 
+                    className="w-full py-5 bg-red-500 text-white font-black rounded-full shadow-xl shadow-red-100 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-widest"
+                 >
+                    {isRejecting ? <Loader2 className="animate-spin" size={18} /> : 'হ্যাঁ, বাতিল করুন'}
+                 </button>
+                 <button 
+                    onClick={() => setRejectConfirm(null)} 
+                    disabled={isRejecting}
+                    className="w-full py-4 bg-slate-50 text-slate-400 font-black rounded-full active:scale-95 transition-all text-xs uppercase tracking-widest"
+                 >
+                    পিছনে যান
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Status Modal - Premium Redesign */}
       {statusModal.show && (
-        <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[1000] flex items-center justify-center p-8 animate-in fade-in">
-          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-12 text-center shadow-2xl">
-             <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'}`}>
-                {statusModal.type === 'success' ? <CheckCircle2 size={56} /> : <AlertCircle size={56} />}
+        <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-center justify-center p-8 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[4rem] p-12 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+             <div className={`w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-10 transition-transform duration-700 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 'bg-red-50 text-red-500 border-red-100'} border-4 shadow-inner`}>
+                {statusModal.type === 'success' ? <CheckCircle2 size={64} strokeWidth={2.5} /> : <AlertCircle size={64} strokeWidth={2.5} />}
              </div>
-             <h3 className="text-2xl font-black text-slate-800 font-noto">{statusModal.title}</h3>
-             <p className="text-[13px] font-bold text-slate-400 mt-4 font-noto">{statusModal.message}</p>
-             <button onClick={() => setStatusModal({ ...statusModal, show: false })} className="w-full mt-10 py-5 bg-slate-800 text-white font-black rounded-full text-sm">ঠিক আছে</button>
+             <h3 className="text-[26px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{statusModal.title}</h3>
+             <p className="text-[14px] font-bold text-slate-400 mt-4 font-noto px-4 leading-relaxed">{statusModal.message}</p>
+             
+             <button 
+                onClick={() => setStatusModal({ ...statusModal, show: false })} 
+                className={`w-full mt-10 py-5 font-black rounded-full text-sm uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-500 text-white shadow-red-100'}`}
+             >
+                {lang === 'bn' ? 'ঠিক আছে' : 'Continue'}
+             </button>
+
+             {/* Decorative Background Elements */}
+             <div className={`absolute top-[-10%] right-[-10%] w-24 h-24 blur-[50px] opacity-10 rounded-full ${statusModal.type === 'success' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+             <div className={`absolute bottom-[-10%] left-[-10%] w-24 h-24 blur-[50px] opacity-10 rounded-full ${statusModal.type === 'success' ? 'bg-blue-400' : 'bg-orange-400'}`}></div>
           </div>
         </div>
       )}
