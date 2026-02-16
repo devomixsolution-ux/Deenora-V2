@@ -50,6 +50,63 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Realtime Status Monitor for Live Blocking
+  useEffect(() => {
+    if (!madrasah?.id && !teacher?.id) return;
+
+    // 1. Monitor Madrasah status (Affects both Admins and Teachers)
+    const mTargetId = teacher ? teacher.madrasah_id : madrasah?.id;
+    
+    const madrasahChannel = supabase
+      .channel('live-status-m')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'madrasahs',
+          filter: `id=eq.${mTargetId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Madrasah;
+          console.log('Live Madrasah Update:', updated.is_active);
+          setMadrasah(prev => prev ? { ...prev, is_active: updated.is_active } : null);
+        }
+      )
+      .subscribe();
+
+    // 2. Monitor Teacher specific status (If logged in as teacher)
+    let teacherChannel: any = null;
+    if (teacher?.id) {
+      teacherChannel = supabase
+        .channel('live-status-t')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'teachers',
+            filter: `id=eq.${teacher.id}`,
+          },
+          (payload) => {
+            const updated = payload.new as Teacher;
+            console.log('Live Teacher Update:', updated.is_active);
+            setTeacher(prev => prev ? { ...prev, is_active: updated.is_active } : null);
+            // If teacher specifically is blocked, immediately force state
+            if (updated.is_active === false) {
+               setMadrasah(prev => prev ? { ...prev, is_active: false } : null);
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      supabase.removeChannel(madrasahChannel);
+      if (teacherChannel) supabase.removeChannel(teacherChannel);
+    };
+  }, [madrasah?.id, teacher?.id]);
+
   // Message cycle for loading screen
   useEffect(() => {
     if (loading) {
@@ -82,8 +139,8 @@ const App: React.FC = () => {
           created_at: data.created_at
         } as Madrasah);
       } else if (data && (!data.is_active || !data.madrasahs?.is_active)) {
-        // Handle teacher or parent madrasah being inactive
-        setMadrasah(prev => prev ? { ...prev, is_active: false } : null);
+        setMadrasah(prev => prev ? { ...prev, is_active: false } : { is_active: false } as Madrasah);
+        setLoading(false);
       }
     } catch (e) {
       console.error("Teacher profile sync failed:", e);
@@ -92,7 +149,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initializeSession = async () => {
-      // 1. Check for Teacher session first
       const savedTeacher = localStorage.getItem('teacher_session');
       if (savedTeacher) {
         try {
@@ -112,12 +168,10 @@ const App: React.FC = () => {
           setLoading(false);
           return;
         } catch (e) {
-          console.error("Corrupt teacher session");
           localStorage.removeItem('teacher_session');
         }
       }
 
-      // 2. Check for Admin Supabase session
       const { data: { session: currentSession } } = await (supabase.auth as any).getSession();
       setSession(currentSession);
       
@@ -281,16 +335,16 @@ const App: React.FC = () => {
 
   if (!session && !teacher) return <Auth lang={lang} />;
 
-  // Account Suspended Screen
+  // Account Suspended Screen (Immediate response to Realtime update)
   if (madrasah && madrasah.is_active === false) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#080A12] px-10 text-white text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#080A12] px-10 text-white text-center animate-in fade-in duration-500">
         <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-8 border-4 border-red-500/30 animate-pulse">
            <ShieldAlert size={48} className="text-red-500" />
         </div>
         <h3 className="text-2xl font-black font-noto mb-4 text-red-500">অ্যাকাউন্ট স্থগিত করা হয়েছে</h3>
         <p className="text-sm font-bold opacity-80 font-noto leading-relaxed mb-10 max-w-xs mx-auto">
-          দুঃখিত, আপনার মাদরাসার পোর্টালে প্রবেশাধিকার সাময়িকভাবে বন্ধ করা হয়েছে। বিস্তারিত জানতে বা পুনরায় চালু করতে অ্যাডমিনের সাথে যোগাযোগ করুন।
+          দুঃখিত, আপনার পোর্টালে প্রবেশাধিকার সাময়িকভাবে বন্ধ করা হয়েছে। বিস্তারিত জানতে বা পুনরায় চালু করতে অ্যাডমিনের সাথে যোগাযোগ করুন।
         </p>
         
         <div className="w-full space-y-4 max-w-xs">
