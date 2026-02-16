@@ -113,6 +113,7 @@ const App: React.FC = () => {
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event: any, session: any) => {
       setSession(session);
       if (session) {
+        setLoading(true);
         fetchMadrasahProfile(session.user.id);
       } else {
         if (!localStorage.getItem('teacher_session')) {
@@ -127,20 +128,23 @@ const App: React.FC = () => {
 
   const fetchMadrasahProfile = async (userId: string, retryCount = 0) => {
     try {
-      const { data } = await supabase.from('madrasahs').select('*').eq('id', userId).maybeSingle();
+      const { data, error } = await supabase.from('madrasahs').select('*').eq('id', userId).maybeSingle();
+      
       if (data) {
         setMadrasah(data);
         offlineApi.setCache('profile', data);
-      } else if (retryCount < 2) {
-        // If trigger is a bit slow, wait 1 second and retry once
+        setLoading(false);
+      } else if (retryCount < 5) {
+        // নতুন ইউজার তৈরির সময় ট্রিগার একটু সময় নিতে পারে, তাই ৫ বার পর্যন্ত ১ সেকেন্ড পরপর চেষ্টা করবে।
+        console.log(`Profile not found, retrying... (${retryCount + 1}/5)`);
         setTimeout(() => fetchMadrasahProfile(userId, retryCount + 1), 1000);
-        return;
       } else {
+        console.error("Profile sync failed after multiple retries.");
         setMadrasah(null);
+        setLoading(false);
       }
     } catch (err) {
-      console.error(err);
-    } finally {
+      console.error("fetchMadrasahProfile error:", err);
       setLoading(false);
     }
   };
@@ -172,7 +176,7 @@ const App: React.FC = () => {
            <Loader2 className="animate-spin text-white mb-4" size={50} />
            <RefreshCw className="absolute inset-0 m-auto animate-pulse opacity-20" size={20} />
         </div>
-        <p className="font-black text-[10px] uppercase tracking-[0.2em] opacity-40">Connecting to Server...</p>
+        <p className="font-black text-[10px] uppercase tracking-[0.2em] opacity-40">Syncing Profile Data...</p>
       </div>
     );
   }
