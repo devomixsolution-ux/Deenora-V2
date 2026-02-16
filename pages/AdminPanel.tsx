@@ -127,7 +127,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       .select('*, madrasahs(*)')
       .neq('status', 'pending')
       .order('created_at', { ascending: false })
-      .limit(30);
+      .limit(50);
     if (data) setTransactionHistory(data);
   };
 
@@ -205,6 +205,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       });
       if (error) throw error;
       setStatusModal({ show: true, type: 'success', title: 'সফল', message: 'রিচার্জ সফল হয়েছে' });
+      initData();
+    } catch (err: any) {
+      setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
+    }
+  };
+
+  const rejectTransaction = async (tr: Transaction) => {
+    try {
+      const { error } = await supabase.from('transactions').update({ status: 'rejected' }).eq('id', tr.id);
+      if (error) throw error;
+      setStatusModal({ show: true, type: 'success', title: 'বাতিল', message: 'পেমেন্ট রিকোয়েস্ট বাতিল করা হয়েছে' });
       initData();
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
@@ -335,36 +346,83 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
           {view === 'approvals' && (
             <div className="space-y-8 px-1">
               <div className="flex items-center justify-between px-2">
-                <h1 className="text-xl font-black text-white font-noto drop-shadow-md">পেমেন্ট রিকোয়েস্ট</h1>
+                <h1 className="text-xl font-black text-white font-noto drop-shadow-md">পেমেন্ট ম্যানেজমেন্ট</h1>
+                <button onClick={initData} className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md active:scale-95 transition-all">
+                   <RefreshCw size={18} />
+                </button>
               </div>
               
-              <div className="space-y-4">
-                {pendingTrans.length > 0 ? pendingTrans.map(tr => (
-                  <div key={tr.id} className="bg-white p-5 rounded-[2rem] border border-white shadow-xl space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="bg-green-50 text-green-600 px-3 py-1 rounded-full text-[14px] font-black">{tr.amount} ৳</div>
-                      <div className="text-[9px] font-black text-slate-400 uppercase">{new Date(tr.created_at).toLocaleDateString('bn-BD')}</div>
+              <div className="space-y-6">
+                <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+                  <AlertCircle size={14} className="text-amber-400" /> Pending Requests
+                </h2>
+                <div className="space-y-4">
+                  {pendingTrans.length > 0 ? pendingTrans.map(tr => (
+                    <div key={tr.id} className="bg-white p-6 rounded-[2.5rem] border border-white shadow-xl space-y-4 animate-in slide-in-from-left-4">
+                      <div className="flex items-center justify-between">
+                        <div className="bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[16px] font-black border border-green-100">{tr.amount} ৳</div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1.5">
+                           <Clock size={12} /> {new Date(tr.created_at).toLocaleDateString('bn-BD')}
+                        </div>
+                      </div>
+                      <div className="px-1">
+                        <p className="text-[15px] font-black text-slate-800 font-noto">{tr.madrasahs?.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-1">TrxID: <span className="text-[#8D30F4]">{tr.transaction_id}</span></p>
+                        <p className="text-[10px] font-bold text-slate-400">Sender: {tr.sender_phone || 'N/A'}</p>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-2 items-center">
+                          <input 
+                            type="number" 
+                            className="flex-1 h-14 px-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-black text-base text-center outline-none focus:border-[#8D30F4]/20" 
+                            value={smsToCredit[tr.id] || ''} 
+                            onChange={(e) => setSmsToCredit({...smsToCredit, [tr.id]: e.target.value})} 
+                            placeholder="SMS Quantity" 
+                          />
+                          <button onClick={() => approveTransaction(tr)} className="px-8 h-14 bg-green-500 text-white font-black rounded-[1.5rem] text-sm active:scale-95 transition-all shadow-lg shadow-green-100">অনুমোদন</button>
+                        </div>
+                        <button onClick={() => rejectTransaction(tr)} className="w-full h-12 bg-red-50 text-red-500 font-black rounded-[1.5rem] text-xs active:scale-95 transition-all border border-red-100">রিকোয়েস্ট বাতিল করুন</button>
+                      </div>
                     </div>
-                    <div className="px-1">
-                      <p className="text-[14px] font-black text-slate-800 font-noto">{tr.madrasahs?.name}</p>
-                      <p className="text-[10px] font-bold text-slate-400">ID: {tr.transaction_id}</p>
+                  )) : (
+                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/20">
+                      <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No Pending Requests</p>
                     </div>
-                    <div className="flex gap-2 items-center">
-                      <input 
-                        type="number" 
-                        className="flex-1 h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-black text-sm text-center" 
-                        value={smsToCredit[tr.id] || ''} 
-                        onChange={(e) => setSmsToCredit({...smsToCredit, [tr.id]: e.target.value})} 
-                        placeholder="Give SMS" 
-                      />
-                      <button onClick={() => approveTransaction(tr)} className="px-6 h-12 bg-green-500 text-white font-black rounded-xl text-xs active:scale-95 transition-all">অনুমোদন</button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-6 pt-4 border-t border-white/10">
+                <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+                   <HistoryIcon size={14} className="text-blue-400" /> Recent Transactions
+                </h2>
+                <div className="space-y-3">
+                  {transactionHistory.length > 0 ? transactionHistory.map(tr => (
+                    <div key={tr.id} className="bg-white/95 p-5 rounded-[2rem] border border-white shadow-lg flex items-center justify-between">
+                       <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                             <p className="text-[15px] font-black text-slate-800 leading-none">{tr.amount} ৳</p>
+                             <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${tr.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                {tr.status}
+                             </span>
+                          </div>
+                          <p className="text-[12px] font-black text-[#2E0B5E] font-noto truncate">{tr.madrasahs?.name}</p>
+                          <div className="flex items-center gap-2 mt-1.5 text-slate-400">
+                             <Clock size={10} />
+                             <p className="text-[9px] font-bold">{new Date(tr.created_at).toLocaleDateString('bn-BD')}</p>
+                          </div>
+                       </div>
+                       <div className="text-right ml-4">
+                          <p className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">TrxID</p>
+                          <p className="text-[10px] font-black text-[#8D30F4] uppercase leading-tight">{tr.transaction_id}</p>
+                       </div>
                     </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-20 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/30">
-                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No Pending Requests</p>
-                  </div>
-                )}
+                  )) : (
+                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/20">
+                       <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No History Found</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
