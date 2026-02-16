@@ -468,6 +468,10 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t('madrasah_phone', lang)}</label>
                     <input type="tel" className="w-full h-16 bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 font-black text-[#2E0B5E] text-lg outline-none focus:border-[#8D30F4]/30" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
                  </div>
+                 <div className="space-y-2.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t('madrasah_code_label', lang)}</label>
+                    <input type="text" className="w-full h-16 bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 font-black text-[#2E0B5E] text-lg outline-none focus:border-[#8D30F4]/30" value={newLoginCode} onChange={(e) => setNewLoginCode(e.target.value)} />
+                 </div>
               </div>
 
               <div className="flex gap-4 pt-2">
