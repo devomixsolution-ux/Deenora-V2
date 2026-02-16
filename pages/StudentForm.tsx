@@ -100,8 +100,11 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
       return;
     }
 
-    if (phone.length !== 11) {
-      setErrorModal({ show: true, message: lang === 'bn' ? 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন' : 'Enter a valid 11-digit mobile number' });
+    if (phone.length < 10 || phone.length > 15) {
+      setErrorModal({ 
+        show: true, 
+        message: lang === 'bn' ? 'সঠিক ১০-১৫ ডিজিটের মোবাইল নম্বর দিন' : 'Enter a valid 10-15 digit phone number' 
+      });
       return;
     }
 
@@ -140,7 +143,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
   };
 
   const handlePhoneChange = (val: string, setter: (v: string) => void) => {
-    const numericValue = val.replace(/\D/g, '').slice(0, 11);
+    const numericValue = val.replace(/\D/g, '').slice(0, 15);
     setter(numericValue);
   };
 
@@ -200,12 +203,12 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
 
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Phone size={14} className="text-[#8D30F4]" /> Phone 1</label>
-                  <input type="tel" required className="w-full h-[64px] px-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-[#2D3142] font-black text-sm outline-none focus:border-[#8D30F4]/30 focus:bg-white transition-all shadow-inner" value={phone} onChange={(e) => handlePhoneChange(e.target.value, setPhone)} />
+                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Phone size={14} className="text-[#8D30F4]" /> Primary & WA (15D)</label>
+                  <input type="tel" required className="w-full h-[64px] px-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-[#2D3142] font-black text-sm outline-none focus:border-[#8D30F4]/30 focus:bg-white transition-all shadow-inner" value={phone} onChange={(e) => handlePhoneChange(e.target.value, setPhone)} placeholder="Max 15 digits" />
                 </div>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Phone size={14} className="text-[#8D30F4]" /> Phone 2</label>
-                  <input type="tel" className="w-full h-[64px] px-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-[#2D3142] font-black text-sm outline-none focus:border-[#8D30F4]/30 focus:bg-white transition-all shadow-inner" value={phone2} onChange={(e) => handlePhoneChange(e.target.value, setPhone2)} />
+                  <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><Phone size={14} className="text-[#8D30F4]" /> Phone 2 (15D)</label>
+                  <input type="tel" className="w-full h-[64px] px-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-[#2D3142] font-black text-sm outline-none focus:border-[#8D30F4]/30 focus:bg-white transition-all shadow-inner" value={phone2} onChange={(e) => handlePhoneChange(e.target.value, setPhone2)} placeholder="Max 15 digits" />
                 </div>
              </div>
           </div>
