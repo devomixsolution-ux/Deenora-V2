@@ -1,5 +1,5 @@
 
--- ১. এক্সটেনশন এনাবল করা (UUID জেনারেশনের জন্য)
+-- ১. এক্সটেনশন এনাবল করা
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ২. মাদরাসা (Madrasahs) টেবিল
@@ -103,33 +103,33 @@ CREATE TABLE IF NOT EXISTS public.admin_sms_stock (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- ১১. আরএলএস পলিসি (Row Level Security)
+-- ১১. আরএলএস পলিসি (Row Level Security) - Super Admin full access
 ALTER TABLE public.madrasahs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access madrasahs" ON public.madrasahs FOR ALL USING (true);
+CREATE POLICY "Public Madrasahs Access" ON public.madrasahs FOR ALL USING (true);
 
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access classes" ON public.classes FOR ALL USING (true);
+CREATE POLICY "Public Classes Access" ON public.classes FOR ALL USING (true);
 
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access students" ON public.students FOR ALL USING (true);
+CREATE POLICY "Public Students Access" ON public.students FOR ALL USING (true);
 
 ALTER TABLE public.teachers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access teachers" ON public.teachers FOR ALL USING (true);
+CREATE POLICY "Public Teachers Access" ON public.teachers FOR ALL USING (true);
 
 ALTER TABLE public.recent_calls ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access recent_calls" ON public.recent_calls FOR ALL USING (true);
+CREATE POLICY "Public Calls Access" ON public.recent_calls FOR ALL USING (true);
 
 ALTER TABLE public.sms_templates ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access sms_templates" ON public.sms_templates FOR ALL USING (true);
+CREATE POLICY "Public Templates Access" ON public.sms_templates FOR ALL USING (true);
 
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access transactions" ON public.transactions FOR ALL USING (true);
+CREATE POLICY "Public Transactions Access" ON public.transactions FOR ALL USING (true);
 
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access system_settings" ON public.system_settings FOR ALL USING (true);
+CREATE POLICY "Public Settings Access" ON public.system_settings FOR ALL USING (true);
 
 ALTER TABLE public.admin_sms_stock ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anyone to access admin_sms_stock" ON public.admin_sms_stock FOR ALL USING (true);
+CREATE POLICY "Public Stock Access" ON public.admin_sms_stock FOR ALL USING (true);
 
 -- ১২. ফাংশন: বাল্ক এসএমএস ব্যালেন্স আপডেট (RPC)
 CREATE OR REPLACE FUNCTION public.send_bulk_sms_rpc(
@@ -178,8 +178,10 @@ INSERT INTO public.system_settings (id, reve_api_key, reve_secret_key, reve_call
 VALUES ('00000000-0000-0000-0000-000000000001', 'aa407e1c6629da8e', '91051e7e', 'Deenora', '০১৭৬৬-XXXXXX')
 ON CONFLICT (id) DO NOTHING;
 
--- ১৫. সুপার অ্যাডমিন ইনসার্ট (Deenora-v2 Special)
--- দ্রষ্টব্য: এই ID টি সুপাবেস অথ (Auth) ইউজারের সাথে মিল থাকতে হবে।
+-- ১৫. সুপার অ্যাডমিন ইনসার্ট
 INSERT INTO public.madrasahs (id, name, email, is_super_admin, is_active, login_code)
 VALUES ('fe678ac3-da4b-4b41-8688-b04aceb71959', 'Deenora Super Admin', 'kmibrahim@gmail.com', true, true, '269596')
 ON CONFLICT (id) DO UPDATE SET is_super_admin = true, login_code = '269596';
+
+-- ১৬. ইনিশিয়াল এসএমএস স্টক
+INSERT INTO public.admin_sms_stock (remaining_sms) VALUES (10000) ON CONFLICT DO NOTHING;

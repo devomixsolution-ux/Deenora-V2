@@ -51,7 +51,7 @@ const App: React.FC = () => {
 
   const syncTeacherProfile = async (id: string) => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('teachers')
         .select('*, madrasahs(name, logo_url)')
         .eq('id', id)
@@ -62,7 +62,7 @@ const App: React.FC = () => {
         localStorage.setItem('teacher_session', JSON.stringify(data));
         setMadrasah({ 
           id: data.madrasah_id, 
-          name: data.madrasahs?.name || (lang === 'bn' ? 'মাদরাসা কন্টাক্ট' : 'Madrasah Contact'), 
+          name: data.madrasahs?.name || 'Madrasah Contact', 
           logo_url: data.madrasahs?.logo_url,
           is_super_admin: false,
           balance: 0,
@@ -74,7 +74,7 @@ const App: React.FC = () => {
         logout();
       }
     } catch (e) {
-      console.error("Profile Sync Error", e);
+      console.error(e);
     }
   };
 
@@ -86,7 +86,7 @@ const App: React.FC = () => {
         setTeacher(teacherData);
         setMadrasah({ 
           id: teacherData.madrasah_id, 
-          name: teacherData.madrasahs?.name || (lang === 'bn' ? 'মাদরাসা কন্টাক্ট' : 'Madrasah Contact'), 
+          name: teacherData.madrasahs?.name || 'Madrasah Contact', 
           logo_url: teacherData.madrasahs?.logo_url,
           is_super_admin: false,
           balance: 0,
@@ -94,9 +94,7 @@ const App: React.FC = () => {
           is_active: true,
           created_at: teacherData.created_at
         } as Madrasah);
-        
         if (navigator.onLine) await syncTeacherProfile(teacherData.id);
-        
         setLoading(false);
         return;
       }
@@ -129,18 +127,14 @@ const App: React.FC = () => {
 
   const fetchMadrasahProfile = async (userId: string) => {
     try {
-      const { data, error: fetchError } = await supabase
-        .from('madrasahs')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-      
+      const { data } = await supabase.from('madrasahs').select('*').eq('id', userId).maybeSingle();
       if (data) {
         setMadrasah(data);
         offlineApi.setCache('profile', data);
       }
-      setLoading(false);
     } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
     }
   };
@@ -159,7 +153,7 @@ const App: React.FC = () => {
       const perms = teacher.permissions;
       if (newView === 'classes' && !perms.can_manage_classes && !perms.can_manage_students) return;
       if (newView === 'wallet-sms' && !perms.can_send_sms && !perms.can_send_free_sms) return;
-      if (['admin-panel', 'admin-dashboard', 'admin-approvals', 'teachers', 'data-management'].includes(newView)) return;
+      if (['admin-panel', 'admin-dashboard', 'admin-approvals'].includes(newView)) return;
     }
     triggerRefresh();
     setView(newView);
@@ -168,7 +162,7 @@ const App: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] text-white">
-        <Loader2 className="animate-spin mb-4 text-white" size={40} />
+        <Loader2 className="animate-spin mb-4" size={40} />
         <p className="font-black text-[10px] uppercase tracking-[0.2em] opacity-40">Loading Portal...</p>
       </div>
     );
@@ -194,7 +188,7 @@ const App: React.FC = () => {
         teacher={teacher}
       >
         {view === 'home' && (
-          isSuperAdmin ? <AdminPanel lang={lang} currentView="list" /> : 
+          isSuperAdmin ? <AdminPanel lang={lang} currentView="list" dataVersion={dataVersion} /> : 
           <Home 
             onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} 
             lang={lang} 
@@ -272,8 +266,8 @@ const App: React.FC = () => {
           />
         )}
 
-        {isSuperAdmin && view === 'admin-dashboard' && <AdminPanel lang={lang} currentView="dashboard" />}
-        {isSuperAdmin && view === 'admin-approvals' && <AdminPanel lang={lang} currentView="approvals" />}
+        {isSuperAdmin && view === 'admin-dashboard' && <AdminPanel lang={lang} currentView="dashboard" dataVersion={dataVersion} />}
+        {isSuperAdmin && view === 'admin-approvals' && <AdminPanel lang={lang} currentView="approvals" dataVersion={dataVersion} />}
         
         <div className="mt-8 mb-4 text-center opacity-30 select-none">
            <span className="text-[9px] font-black text-white uppercase tracking-widest">{APP_VERSION}</span>
