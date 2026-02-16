@@ -206,52 +206,52 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         <button onClick={onLogout} className="w-full p-8 flex items-center justify-between group"><div className="flex items-center gap-6"><div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center"><LogOut size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-red-600 font-noto">{t('logout', lang)}</h5><p className="text-[10px] font-bold text-red-300 uppercase tracking-widest mt-1">{t('logout_system', lang)}</p></div></div><ChevronRight size={22} className="text-red-100" /></button>
       </div>
 
-      {/* SYSTEM CORE UPDATE POPUP - Tighter Spacing */}
+      {/* SYSTEM CORE UPDATE POPUP - Optimized Spacing and Top-Aligned */}
       {isEditingGlobal && (
-        <div className="fixed inset-0 bg-[#080A12]/90 backdrop-blur-3xl z-[9001] flex items-center justify-center p-4 animate-in fade-in duration-300">
-           <div className="bg-[#1A0B2E] w-full max-w-sm rounded-[3rem] shadow-2xl animate-in zoom-in-95 duration-500 border border-white/10 overflow-hidden flex flex-col max-h-[92vh] relative">
-              <div className="p-6 shrink-0 relative overflow-hidden">
+        <div className="fixed inset-0 bg-[#080A12]/90 backdrop-blur-3xl z-[9001] flex items-start justify-center p-4 pt-12 animate-in fade-in duration-300">
+           <div className="bg-[#1A0B2E] w-full max-w-sm rounded-[3rem] shadow-2xl animate-in zoom-in-95 duration-500 border border-white/10 overflow-hidden flex flex-col max-h-[85vh] relative">
+              <div className="p-5 shrink-0 relative overflow-hidden">
                  <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 bg-[#8D30F4] text-white rounded-2xl flex items-center justify-center border border-white/20"><Shield size={24} strokeWidth={2.5} /></div>
-                       <div><h3 className="text-xl font-black text-white font-noto tracking-tight">System Core</h3><p className="text-[8px] font-black text-[#A179FF] uppercase tracking-[0.2em] mt-1">Kernel Control</p></div>
+                    <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 bg-[#8D30F4] text-white rounded-xl flex items-center justify-center border border-white/20"><Shield size={20} strokeWidth={2.5} /></div>
+                       <div><h3 className="text-lg font-black text-white font-noto tracking-tight">System Core</h3><p className="text-[7px] font-black text-[#A179FF] uppercase tracking-[0.2em]">Kernel Control</p></div>
                     </div>
-                    <button onClick={() => setIsEditingGlobal(false)} className="w-10 h-10 bg-white/5 text-white/40 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-white/5"><X size={20} /></button>
+                    <button onClick={() => setIsEditingGlobal(false)} className="w-9 h-9 bg-white/5 text-white/40 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-white/5"><X size={18} /></button>
                  </div>
               </div>
-              <div className="px-6 pb-10 space-y-6 overflow-y-auto custom-scrollbar flex-1 relative z-10">
-                 <div className="space-y-3">
-                    <h4 className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] px-1">Gateway Protocols</h4>
-                    <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 space-y-5">
-                       <div className="space-y-1"><label className="text-[8px] font-black text-[#A179FF] uppercase px-1">Master API Key</label><input type="text" className="w-full h-12 bg-[#080A12]/50 border border-white/10 rounded-xl px-4 font-bold text-[#A179FF] text-[11px] outline-none focus:border-[#8D30F4]/50" value={globalSettings.reve_api_key} onChange={(e) => setGlobalSettings({...globalSettings, reve_api_key: e.target.value})} /></div>
-                       <div className="space-y-1"><label className="text-[8px] font-black text-[#A179FF] uppercase px-1">Encryption Token</label><input type="password" className="w-full h-12 bg-[#080A12]/50 border border-white/10 rounded-xl px-4 font-bold text-[#A179FF] text-[11px] outline-none focus:border-[#8D30F4]/50" value={globalSettings.reve_secret_key} onChange={(e) => setGlobalSettings({...globalSettings, reve_secret_key: e.target.value})} /></div>
+              <div className="px-6 pb-8 space-y-5 overflow-y-auto custom-scrollbar flex-1 relative z-10">
+                 <div className="space-y-2.5">
+                    <h4 className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em] px-1">Gateway Protocols</h4>
+                    <div className="bg-white/5 p-4 rounded-[2rem] border border-white/5 space-y-4">
+                       <div className="space-y-1"><label className="text-[9px] font-black text-[#A179FF] uppercase px-1">Master API Key</label><input type="text" className="w-full h-11 bg-[#080A12]/50 border border-white/10 rounded-xl px-4 font-bold text-[#A179FF] text-[11px] outline-none focus:border-[#8D30F4]/50" value={globalSettings.reve_api_key} onChange={(e) => setGlobalSettings({...globalSettings, reve_api_key: e.target.value})} /></div>
+                       <div className="space-y-1"><label className="text-[9px] font-black text-[#A179FF] uppercase px-1">Encryption Token</label><input type="password" className="w-full h-11 bg-[#080A12]/50 border border-white/10 rounded-xl px-4 font-bold text-[#A179FF] text-[11px] outline-none focus:border-[#8D30F4]/50" value={globalSettings.reve_secret_key} onChange={(e) => setGlobalSettings({...globalSettings, reve_secret_key: e.target.value})} /></div>
                     </div>
                  </div>
-                 <div className="space-y-3">
-                    <h4 className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] px-1">Global Identities</h4>
-                    <div className="grid grid-cols-1 gap-4">
-                       <div className="space-y-1"><label className="text-[8px] font-black text-white/40 uppercase px-1">Global Caller ID</label><input type="text" className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 font-black text-white text-sm outline-none focus:border-[#8D30F4]/50" value={globalSettings.reve_caller_id} onChange={(e) => setGlobalSettings({...globalSettings, reve_caller_id: e.target.value})} /></div>
-                       <div className="space-y-1"><label className="text-[8px] font-black text-white/40 uppercase px-1">Master Payment Number</label><input type="text" className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 font-black text-white text-sm outline-none focus:border-[#8D30F4]/50" value={globalSettings.bkash_number} onChange={(e) => setGlobalSettings({...globalSettings, bkash_number: e.target.value})} /></div>
+                 <div className="space-y-2.5">
+                    <h4 className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em] px-1">Global Identities</h4>
+                    <div className="bg-white/5 p-4 rounded-[2rem] border border-white/5 space-y-4">
+                       <div className="space-y-1"><label className="text-[9px] font-black text-white/60 uppercase px-1">Global Caller ID</label><input type="text" className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 font-black text-white text-sm outline-none focus:border-[#8D30F4]/50" value={globalSettings.reve_caller_id} onChange={(e) => setGlobalSettings({...globalSettings, reve_caller_id: e.target.value})} /></div>
+                       <div className="space-y-1"><label className="text-[9px] font-black text-white/60 uppercase px-1">Master Payment Number</label><input type="text" className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 font-black text-white text-sm outline-none focus:border-[#8D30F4]/50" value={globalSettings.bkash_number} onChange={(e) => setGlobalSettings({...globalSettings, bkash_number: e.target.value})} /></div>
                     </div>
                  </div>
-                 <div className="pt-2"><button onClick={handleSaveGlobalSettings} disabled={saving} className="w-full h-14 bg-gradient-to-r from-[#8D30F4] to-[#A179FF] text-white font-black rounded-full shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/20">{saving ? <Loader2 className="animate-spin" size={20} /> : <><RefreshCw size={18} /> Push Changes</>}</button></div>
+                 <div className="pt-2"><button onClick={handleSaveGlobalSettings} disabled={saving} className="w-full h-13 bg-gradient-to-r from-[#8D30F4] to-[#A179FF] text-white font-black rounded-full shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/20 text-xs uppercase tracking-widest">{saving ? <Loader2 className="animate-spin" size={18} /> : <><RefreshCw size={16} /> Push Changes</>}</button></div>
               </div>
            </div>
         </div>
       )}
 
-      {/* Edit Profile Modal - Tighter Design */}
+      {/* Edit Profile Modal - Top-Aligned and Compact */}
       {isEditingProfile && (
-        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-center justify-center p-4">
-           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-6 shadow-2xl space-y-6 animate-in zoom-in-95 duration-500 relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-start justify-center p-4 pt-16">
+           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-500 relative max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3"><div className="w-10 h-10 bg-purple-50 text-[#8D30F4] rounded-xl flex items-center justify-center"><Edit3 size={20} /></div><h3 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">অ্যাকাউন্ট আপডেট</h3></div>
                 <button onClick={() => setIsEditingProfile(false)} className="w-9 h-9 bg-slate-50 text-slate-300 rounded-xl flex items-center justify-center"><X size={20} /></button>
               </div>
-              <div className="space-y-4">
-                 <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">{t('madrasah_name', lang)}</label><input type="text" className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl px-4 font-black text-[#2E0B5E] text-sm outline-none focus:border-[#8D30F4]/30" value={newName} onChange={(e) => setNewName(e.target.value)} /></div>
-                 <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">{t('madrasah_phone', lang)}</label><input type="tel" className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl px-4 font-black text-[#2E0B5E] text-sm outline-none focus:border-[#8D30F4]/30" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} /></div>
-                 <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">{t('madrasah_code_label', lang)}</label><input type="text" className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl px-4 font-black text-[#2E0B5E] text-sm outline-none focus:border-[#8D30F4]/30" value={newLoginCode} onChange={(e) => setNewLoginCode(e.target.value)} /></div>
+              <div className="space-y-3.5">
+                 <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">{t('madrasah_name', lang)}</label><input type="text" className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl px-4 font-black text-[#2E0B5E] text-sm outline-none focus:border-[#8D30F4]/30" value={newName} onChange={(e) => setNewName(e.target.value)} /></div>
+                 <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">{t('madrasah_phone', lang)}</label><input type="tel" className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl px-4 font-black text-[#2E0B5E] text-sm outline-none focus:border-[#8D30F4]/30" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} /></div>
+                 <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">{t('madrasah_code_label', lang)}</label><input type="text" className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl px-4 font-black text-[#2E0B5E] text-sm outline-none focus:border-[#8D30F4]/30" value={newLoginCode} onChange={(e) => setNewLoginCode(e.target.value)} /></div>
               </div>
               <div className="flex gap-2 pt-2 shrink-0">
                  <button onClick={() => setIsEditingProfile(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl text-[10px] uppercase">বাতিল</button>

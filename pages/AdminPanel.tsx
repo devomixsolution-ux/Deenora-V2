@@ -495,7 +495,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                        </div>
                     </div>
                   )) : (
-                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/30">
+                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/20">
                        <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No History Found</p>
                     </div>
                   )}
@@ -621,9 +621,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         </>
       )}
 
-      {/* Reject Confirmation Modal - Tighter Design */}
+      {/* Reject Confirmation Modal - Top-Aligned and Compact */}
       {rejectConfirm && (
-        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-3xl z-[1001] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-3xl z-[1001] flex items-start justify-center p-6 pt-24 animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-sm rounded-[3rem] p-8 shadow-[0_40px_100px_rgba(0,0,0,0.15)] text-center animate-in zoom-in-95 duration-500 border border-red-50">
               <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner border border-red-100">
                  <AlertTriangle size={32} />
@@ -642,9 +642,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         </div>
       )}
 
-      {/* Status Modal - Tighter Design */}
+      {/* Status Modal - Top-Aligned and Compact */}
       {statusModal.show && (
-        <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-start justify-center p-6 pt-32 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 transition-transform duration-700 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 'bg-red-50 text-red-500 border-red-100'} border-4 shadow-inner`}>
                 {statusModal.type === 'success' ? <CheckCircle2 size={40} strokeWidth={2.5} /> : <AlertCircle size={40} strokeWidth={2.5} />}
