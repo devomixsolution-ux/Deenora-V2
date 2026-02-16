@@ -103,38 +103,65 @@ CREATE TABLE IF NOT EXISTS public.admin_sms_stock (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- ১১. আরএলএস পলিসি (Row Level Security) - Super Admin full access
+-- ১১. আরএলএস পলিসি (Row Level Security)
 ALTER TABLE public.madrasahs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public Madrasahs Access" ON public.madrasahs FOR ALL USING (true);
+DROP POLICY IF EXISTS "Public Madrasahs Access" ON public.madrasahs;
+CREATE POLICY "Public Madrasahs Access" ON public.madrasahs FOR ALL USING (true) WITH CHECK (true);
 
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Classes Access" ON public.classes;
 CREATE POLICY "Public Classes Access" ON public.classes FOR ALL USING (true);
 
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Students Access" ON public.students;
 CREATE POLICY "Public Students Access" ON public.students FOR ALL USING (true);
 
 ALTER TABLE public.teachers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Teachers Access" ON public.teachers;
 CREATE POLICY "Public Teachers Access" ON public.teachers FOR ALL USING (true);
 
 ALTER TABLE public.recent_calls ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Calls Access" ON public.recent_calls;
 CREATE POLICY "Public Calls Access" ON public.recent_calls FOR ALL USING (true);
 
 ALTER TABLE public.sms_templates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Templates Access" ON public.sms_templates;
 CREATE POLICY "Public Templates Access" ON public.sms_templates FOR ALL USING (true);
 
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Transactions Access" ON public.transactions;
 CREATE POLICY "Public Transactions Access" ON public.transactions FOR ALL USING (true);
 
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Settings Access" ON public.system_settings;
 CREATE POLICY "Public Settings Access" ON public.system_settings FOR ALL USING (true);
 
 ALTER TABLE public.admin_sms_stock ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Stock Access" ON public.admin_sms_stock;
 CREATE POLICY "Public Stock Access" ON public.admin_sms_stock FOR ALL USING (true);
 
--- ১২. স্বয়ংক্রিয় প্রোফাইল ক্রিয়েশন ট্রিগার ফাংশন
--- এই ফাংশনটি নিশ্চিত করবে যে Auth ইউজার তৈরি হলে madrasahs টেবিলে ডাটা যাবেই।
+-- ১২. স্টোরেজ বাকেট (Storage Bucket) তৈরি
+-- বাকেট তৈরি করার SQL
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('madrasah-assets', 'madrasah-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- স্টোরেজ পলিসি (যাতে সবাই ছবি দেখতে পারে এবং আপলোড করতে পারে)
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING ( bucket_id = 'madrasah-assets' );
+
+DROP POLICY IF EXISTS "Public Upload" ON storage.objects;
+CREATE POLICY "Public Upload" ON storage.objects FOR INSERT WITH CHECK ( bucket_id = 'madrasah-assets' );
+
+DROP POLICY IF EXISTS "Public Update" ON storage.objects;
+CREATE POLICY "Public Update" ON storage.objects FOR UPDATE WITH CHECK ( bucket_id = 'madrasah-assets' );
+
+-- ১৩. শক্তিশালী ট্রিগার ফাংশন
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
+RETURNS trigger 
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
 BEGIN
   INSERT INTO public.madrasahs (id, email, name, is_active, is_super_admin, sms_balance)
   VALUES (
@@ -150,71 +177,34 @@ BEGIN
     name = COALESCE(public.madrasahs.name, EXCLUDED.name);
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
--- ট্রিগার তৈরি
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ১৩. ব্যাকফিল (Backfill): আপনার টেস্ট ইউজারের ডাটা যদি এখনো না থাকে, তবে এটি রান করলে চলে আসবে।
+-- ১৪. ম্যানুয়াল ব্যাকফিল
 INSERT INTO public.madrasahs (id, email, name, is_active, is_super_admin)
 SELECT id, email, split_part(email, '@', 1), true, false
 FROM auth.users
 ON CONFLICT (id) DO NOTHING;
 
--- ১৪. ফাংশন: বাল্ক এসএমএস ব্যালেন্স আপডেট (RPC)
-CREATE OR REPLACE FUNCTION public.send_bulk_sms_rpc(
-    p_madrasah_id UUID,
-    p_student_ids UUID[],
-    p_message TEXT
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_count INTEGER;
-    v_current_balance INTEGER;
+-- ১৫. অন্যান্য ফাংশন (RPC)
+CREATE OR REPLACE FUNCTION public.send_bulk_sms_rpc(p_madrasah_id UUID, p_student_ids UUID[], p_message TEXT)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_count INTEGER; v_current_balance INTEGER;
 BEGIN
     v_count := array_length(p_student_ids, 1);
     SELECT sms_balance INTO v_current_balance FROM public.madrasahs WHERE id = p_madrasah_id;
-    IF v_current_balance < v_count THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Insufficient balance');
-    END IF;
+    IF v_current_balance < v_count THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient balance'); END IF;
     UPDATE public.madrasahs SET sms_balance = sms_balance - v_count WHERE id = p_madrasah_id;
     RETURN jsonb_build_object('success', true, 'new_balance', v_current_balance - v_count);
-END;
-$$;
+END; $$;
 
--- ১৫. ফাংশন: পেমেন্ট অ্যাপ্রুভ এবং এসএমএস ক্রেডিট করা (RPC)
-CREATE OR REPLACE FUNCTION public.approve_payment_with_sms(
-    t_id UUID,
-    m_id UUID,
-    sms_to_give INTEGER
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-    UPDATE public.transactions SET status = 'approved' WHERE id = t_id;
-    UPDATE public.madrasahs SET sms_balance = sms_balance + sms_to_give WHERE id = m_id;
-    UPDATE public.admin_sms_stock SET remaining_sms = remaining_sms - sms_to_give;
-    RETURN jsonb_build_object('success', true);
-END;
-$$;
-
--- ১৬. ডেটা ইনসার্ট (System Settings)
+-- ১৬. ইনিশিয়াল ডেটা
 INSERT INTO public.system_settings (id, reve_api_key, reve_secret_key, reve_caller_id, bkash_number)
 VALUES ('00000000-0000-0000-0000-000000000001', 'aa407e1c6629da8e', '91051e7e', 'Deenora', '০১৭৬৬-XXXXXX')
 ON CONFLICT (id) DO NOTHING;
 
--- ১৭. সুপার অ্যাডমিন ইনসার্ট
-INSERT INTO public.madrasahs (id, name, email, is_super_admin, is_active, login_code)
-VALUES ('fe678ac3-da4b-4b41-8688-b04aceb71959', 'Deenora Super Admin', 'kmibrahim@gmail.com', true, true, '269596')
-ON CONFLICT (id) DO UPDATE SET is_super_admin = true, login_code = '269596';
-
--- ১৮. ইনিশিয়াল এসএমএস স্টক
 INSERT INTO public.admin_sms_stock (remaining_sms) VALUES (10000) ON CONFLICT DO NOTHING;

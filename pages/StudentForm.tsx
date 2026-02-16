@@ -69,7 +69,12 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
         .from('madrasah-assets')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        if (uploadError.message.includes('Bucket not found')) {
+          throw new Error(lang === 'bn' ? 'স্টোরেজ বাকেট পাওয়া যায়নি। অনুগ্রহ করে SQL রান করুন।' : 'Storage bucket not found. Please run the SQL setup.');
+        }
+        throw uploadError;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('madrasah-assets')
@@ -77,7 +82,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
 
       setPhotoUrl(publicUrl);
     } catch (err: any) {
-      setErrorModal({ show: true, message: lang === 'bn' ? `ব্যর্থ হয়েছে: ${err.message}` : `Upload failed: ${err.message}` });
+      setErrorModal({ show: true, message: err.message || (lang === 'bn' ? `ব্যর্থ হয়েছে` : `Upload failed`) });
     } finally {
       setUploading(false);
     }
@@ -95,14 +100,8 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
       return;
     }
 
-    // Phone validation - Must be exactly 11 digits
     if (phone.length !== 11) {
       setErrorModal({ show: true, message: lang === 'bn' ? 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন' : 'Enter a valid 11-digit mobile number' });
-      return;
-    }
-
-    if (phone2 && phone2.length !== 11) {
-      setErrorModal({ show: true, message: lang === 'bn' ? '২য় ফোন নম্বরটি ১১ ডিজিটের হতে হবে' : 'Second phone must be 11 digits' });
       return;
     }
 
@@ -226,7 +225,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
 
       {showClassModal && (
         <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[500] flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(141,48,244,0.2)] border border-[#8D30F4]/5 relative animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(141,48,244,0.2)] border border-[#8D30F4]/5 relative animate-in zoom-in-95 duration-300">
             <button onClick={() => setShowClassModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-[#8D30F4] hover:scale-110 transition-all"><X size={26} strokeWidth={3} /></button>
             
             <div className="flex items-center gap-5 mb-8">
@@ -246,11 +245,6 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
                     {classId === cls.id && <Check size={20} strokeWidth={4} />}
                  </button>
                ))}
-               {classes.length === 0 && (
-                 <div className="text-center py-10">
-                   <p className="text-slate-400 font-bold text-sm">No classes found</p>
-                 </div>
-               )}
             </div>
           </div>
         </div>

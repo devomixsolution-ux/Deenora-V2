@@ -14,7 +14,7 @@ import WalletSMS from './pages/WalletSMS';
 import DataManagement from './pages/DataManagement';
 import Teachers from './pages/Teachers';
 import { View, Class, Student, Language, Madrasah, Teacher } from './types';
-import { WifiOff, Loader2, RefreshCw } from 'lucide-react';
+import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle } from 'lucide-react';
 import { t } from './translations';
 
 const App: React.FC = () => {
@@ -135,17 +135,42 @@ const App: React.FC = () => {
         offlineApi.setCache('profile', data);
         setLoading(false);
       } else if (retryCount < 5) {
-        // নতুন ইউজার তৈরির সময় ট্রিগার একটু সময় নিতে পারে, তাই ৫ বার পর্যন্ত ১ সেকেন্ড পরপর চেষ্টা করবে।
         console.log(`Profile not found, retrying... (${retryCount + 1}/5)`);
         setTimeout(() => fetchMadrasahProfile(userId, retryCount + 1), 1000);
       } else {
-        console.error("Profile sync failed after multiple retries.");
         setMadrasah(null);
         setLoading(false);
       }
     } catch (err) {
       console.error("fetchMadrasahProfile error:", err);
       setLoading(false);
+    }
+  };
+
+  const handleManualSync = async () => {
+    if (!session?.user) return;
+    setSyncing(true);
+    try {
+      const { data: existing } = await supabase.from('madrasahs').select('id').eq('id', session.user.id).maybeSingle();
+      
+      if (!existing) {
+        // ম্যানুয়ালি ডাটাবেসে রিকোয়েস্ট পাঠিয়ে প্রোফাইল তৈরি করা
+        const { error: insertError } = await supabase.from('madrasahs').insert({
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.email?.split('@')[0] || 'New Madrasah',
+          is_active: true,
+          is_super_admin: false
+        });
+        
+        if (insertError) throw insertError;
+      }
+      
+      await fetchMadrasahProfile(session.user.id);
+    } catch (err: any) {
+      alert(lang === 'bn' ? 'সিঙ্ক ব্যর্থ হয়েছে: ' + err.message : 'Sync Failed: ' + err.message);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -183,13 +208,46 @@ const App: React.FC = () => {
 
   if (!session && !teacher) return <Auth lang={lang} />;
 
+  // প্রোফাইল না পাওয়া গেলে স্পেশাল এরর স্ক্রিন
+  if (session && !madrasah && !loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] px-10 text-white text-center">
+        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-8 border-4 border-white/30 animate-pulse">
+           <AlertTriangle size={48} className="text-white" />
+        </div>
+        <h3 className="text-2xl font-black font-noto mb-4">প্রোফাইল পাওয়া যায়নি!</h3>
+        <p className="text-sm font-bold opacity-80 font-noto leading-relaxed mb-10">
+          আপনার ইমেইল দিয়ে কোনো মাদ্রাসা প্রোফাইল সিস্টেমে রেজিস্টার করা নেই। এটি হতে পারে সার্ভার সিঙ্ক্রোনাইজেশনের জন্য। নিচের বাটনে ক্লিক করে প্রোফাইল আপডেট করুন।
+        </p>
+        
+        <div className="w-full space-y-4">
+          <button 
+            onClick={handleManualSync} 
+            disabled={syncing}
+            className="w-full py-5 bg-white text-[#9D50FF] font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+          >
+            {syncing ? <Loader2 className="animate-spin" /> : <RefreshCw size={20} />} 
+            প্রোফাইল সিঙ্ক করুন
+          </button>
+          
+          <button 
+            onClick={logout} 
+            className="w-full py-4 bg-transparent text-white font-bold rounded-full border border-white/30 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+          >
+            <LogOut size={16} /> লগ আউট করুন
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const isSuperAdmin = madrasah?.is_super_admin === true;
 
   return (
     <div className="relative h-full w-full bg-transparent">
       {(!isOnline || syncing) && (
         <div className="absolute top-0 left-0 right-0 bg-white/60 backdrop-blur-md text-[#2E0B5E] text-[10px] font-black py-1.5 px-4 z-[60] flex items-center justify-center gap-2 uppercase tracking-widest border-b border-[#8D30F4]/10">
-          {syncing ? <><RefreshCw size={12} className="animate-spin text-[#8D30F4]" /> Syncing...</> : <><WifiOff size={10} className="text-red-400" /> Offline Mode</>}
+          {syncing ? <><RefreshCw size={12} className="animate-spin text-[#8D30F4]" /> Syncing Profile...</> : <><WifiOff size={10} className="text-red-400" /> Offline Mode</>}
         </div>
       )}
       

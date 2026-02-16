@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle } from 'lucide-react';
+import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle, GraduationCap } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, View } from '../types';
 import { t } from '../translations';
@@ -66,6 +66,10 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
     if (!initialMadrasah) return;
     setLoadingStats(true);
     try {
+      // Fetch latest profile to get real-time SMS balance
+      const { data: profile } = await supabase.from('madrasahs').select('*').eq('id', initialMadrasah.id).maybeSingle();
+      if (profile) setMadrasah(profile);
+
       const [stdRes, clsRes, teaRes] = await Promise.all([
         supabase.from('students').select('*', { count: 'exact', head: true }).eq('madrasah_id', initialMadrasah.id),
         supabase.from('classes').select('*', { count: 'exact', head: true }).eq('madrasah_id', initialMadrasah.id),
@@ -187,7 +191,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-28">
-      {/* Super Admin Control logic stays same... */}
+      {/* Super Admin Control Center */}
       {isSuperAdmin && (
         <div className="bg-white/95 backdrop-blur-3xl p-8 rounded-[3.5rem] border border-white/50 shadow-[0_25px_60px_-15px_rgba(46,11,94,0.1)] space-y-8 relative overflow-hidden group">
            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-700">
@@ -209,7 +213,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 </button>
               )}
            </div>
-           {/* Form logic remains the same... */}
+           
            {isEditingGlobal ? (
               <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 relative z-10">
                  <div className="space-y-5">
@@ -290,6 +294,49 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Real-time Statistics Grid */}
+        <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-bottom-5 duration-700">
+           <div className="bg-slate-50/50 p-5 rounded-[2rem] border border-white/80 shadow-sm flex flex-col items-center text-center">
+              <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-2 shadow-inner">
+                 <Users size={20} />
+              </div>
+              <p className="text-[18px] font-black text-[#2E0B5E] leading-none">
+                {loadingStats ? <Loader2 className="animate-spin" size={14} /> : stats.students}
+              </p>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{t('students', lang)}</p>
+           </div>
+
+           <div className="bg-slate-50/50 p-5 rounded-[2rem] border border-white/80 shadow-sm flex flex-col items-center text-center">
+              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-2 shadow-inner">
+                 <Layers size={20} />
+              </div>
+              <p className="text-[18px] font-black text-[#2E0B5E] leading-none">
+                {loadingStats ? <Loader2 className="animate-spin" size={14} /> : stats.classes}
+              </p>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{t('classes', lang)}</p>
+           </div>
+
+           <div className="bg-slate-50/50 p-5 rounded-[2rem] border border-white/80 shadow-sm flex flex-col items-center text-center">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-2 shadow-inner">
+                 <GraduationCap size={20} />
+              </div>
+              <p className="text-[18px] font-black text-[#2E0B5E] leading-none">
+                {loadingStats ? <Loader2 className="animate-spin" size={14} /> : stats.teachers}
+              </p>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{t('teachers', lang)}</p>
+           </div>
+
+           <div className="bg-slate-50/50 p-5 rounded-[2rem] border border-white/80 shadow-sm flex flex-col items-center text-center">
+              <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-2 shadow-inner">
+                 <Zap size={20} />
+              </div>
+              <p className="text-[18px] font-black text-[#2E0B5E] leading-none">
+                {loadingStats ? <Loader2 className="animate-spin" size={14} /> : madrasah.sms_balance || 0}
+              </p>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5">SMS Left</p>
+           </div>
         </div>
 
         {/* Info & Edit Area */}
