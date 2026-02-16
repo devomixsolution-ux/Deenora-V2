@@ -14,7 +14,7 @@ import WalletSMS from './pages/WalletSMS';
 import DataManagement from './pages/DataManagement';
 import Teachers from './pages/Teachers';
 import { View, Class, Student, Language, Madrasah, Teacher } from './types';
-import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle } from 'lucide-react';
+import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { t } from './translations';
 
 const App: React.FC = () => {
@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [dataVersion, setDataVersion] = useState(0); 
+  const [loadingPhase, setLoadingPhase] = useState(0);
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('app_lang') as Language) || 'bn';
   });
@@ -48,6 +49,16 @@ const App: React.FC = () => {
       window.removeEventListener('offline', handleStatusChange);
     };
   }, []);
+
+  // Message cycle for loading screen
+  useEffect(() => {
+    if (loading) {
+      const interval = setInterval(() => {
+        setLoadingPhase(prev => (prev + 1) % 3);
+      }, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [loading]);
 
   const syncTeacherProfile = async (id: string) => {
     try {
@@ -154,7 +165,6 @@ const App: React.FC = () => {
       const { data: existing } = await supabase.from('madrasahs').select('id').eq('id', session.user.id).maybeSingle();
       
       if (!existing) {
-        // ম্যানুয়ালি ডাটাবেসে রিকোয়েস্ট পাঠিয়ে প্রোফাইল তৈরি করা
         const { error: insertError } = await supabase.from('madrasahs').insert({
           id: session.user.id,
           email: session.user.email,
@@ -162,10 +172,8 @@ const App: React.FC = () => {
           is_active: true,
           is_super_admin: false
         });
-        
         if (insertError) throw insertError;
       }
-      
       await fetchMadrasahProfile(session.user.id);
     } catch (err: any) {
       alert(lang === 'bn' ? 'সিঙ্ক ব্যর্থ হয়েছে: ' + err.message : 'Sync Failed: ' + err.message);
@@ -195,23 +203,80 @@ const App: React.FC = () => {
   };
 
   if (loading) {
+    const messages = [
+      lang === 'bn' ? 'সিকিউর কানেকশন তৈরি হচ্ছে...' : 'Establishing Secure Connection...',
+      lang === 'bn' ? 'প্রোফাইল ডাটা সিঙ্ক করা হচ্ছে...' : 'Syncing Profile Data...',
+      lang === 'bn' ? 'আপনার ড্যাশবোর্ড সাজানো হচ্ছে...' : 'Preparing Your Dashboard...'
+    ];
+
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] text-white">
-        <div className="relative">
-           <Loader2 className="animate-spin text-white mb-4" size={50} />
-           <RefreshCw className="absolute inset-0 m-auto animate-pulse opacity-20" size={20} />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] relative overflow-hidden mesh-bg-vibrant">
+        {/* Animated Background Blobs */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#8D30F4] rounded-full blur-[120px] opacity-40 animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#A179FF] rounded-full blur-[120px] opacity-40 animate-pulse" style={{ animationDelay: '1s' }}></div>
+
+        <div className="relative z-10 flex flex-col items-center">
+          {/* Advanced Pulse Loader */}
+          <div className="relative w-40 h-40 flex items-center justify-center">
+            {/* Outer Rotating Dash Ring */}
+            <div className="absolute inset-0 border-[3px] border-dashed border-white/20 rounded-full animate-[spin_8s_linear_infinite]"></div>
+            
+            {/* Middle Pulsing Glow Ring */}
+            <div className="absolute inset-4 border-[4px] border-white/30 rounded-full animate-[ping_3s_ease-in-out_infinite] opacity-20"></div>
+            
+            {/* Core Spinning Loader */}
+            <div className="absolute inset-8 border-t-[5px] border-r-[5px] border-white border-solid rounded-full animate-spin shadow-[0_0_20px_rgba(255,255,255,0.4)]"></div>
+            
+            {/* Center Brand Icon */}
+            <div className="relative w-16 h-16 bg-white rounded-[1.8rem] flex items-center justify-center shadow-2xl animate-[pulse_2s_ease-in-out_infinite] border-2 border-white/50">
+              <BookOpen size={32} className="text-[#8D30F4]" />
+            </div>
+
+            {/* Orbiting Sparkles */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 animate-bounce">
+              <Sparkles size={16} className="text-white/40" />
+            </div>
+          </div>
+
+          <div className="mt-12 text-center space-y-4 px-10">
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-white font-black text-[11px] uppercase tracking-[0.6em] ml-[0.6em] opacity-90 drop-shadow-lg">
+                DEENORA
+              </span>
+              <div className="w-8 h-1 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-white w-1/2 animate-[shimmer_1.5s_infinite_linear]"></div>
+              </div>
+            </div>
+            
+            <div className="h-10 flex items-center justify-center">
+              <p className="font-bold text-white/70 text-[13px] font-noto tracking-wide animate-in fade-in slide-in-from-bottom-2 duration-700" key={loadingPhase}>
+                {messages[loadingPhase]}
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="font-black text-[10px] uppercase tracking-[0.2em] opacity-40">Syncing Profile Data...</p>
+
+        {/* Brand Footer */}
+        <div className="absolute bottom-10 left-0 right-0 text-center opacity-30">
+          <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Authorized System Only</p>
+        </div>
+
+        <style>{`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+          }
+        `}</style>
       </div>
     );
   }
 
   if (!session && !teacher) return <Auth lang={lang} />;
 
-  // প্রোফাইল না পাওয়া গেলে স্পেশাল এরর স্ক্রিন
+  // Profile not found error screen
   if (session && !madrasah && !loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] px-10 text-white text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] px-10 text-white text-center mesh-bg-vibrant">
         <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-8 border-4 border-white/30 animate-pulse">
            <AlertTriangle size={48} className="text-white" />
         </div>
