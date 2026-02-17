@@ -451,6 +451,7 @@ const App: React.FC = () => {
             canSendSMS={!teacher || (teacher.permissions.can_send_sms || teacher.permissions.can_send_free_sms)}
             teacher={teacher}
             madrasahId={madrasah?.id}
+            onNavigateToWallet={() => setView('wallet-sms')}
           />
         )}
 

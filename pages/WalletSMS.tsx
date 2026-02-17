@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Loader2, Send, ChevronDown, BookOpen, Users, CheckCircle2, MessageSquare, Plus, Edit3, Trash2, Smartphone, X, Check, History, Zap, AlertTriangle, Clock, Save } from 'lucide-react';
+import { CreditCard, Loader2, Send, ChevronDown, BookOpen, Users, CheckCircle2, MessageSquare, Plus, Edit3, Trash2, Smartphone, X, Check, History, Zap, AlertTriangle, Clock, Save, AlertCircle } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { SMSTemplate, Language, Madrasah, Class, Student, Transaction } from '../types';
 import { t } from '../translations';
@@ -35,6 +35,14 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
   const [tempTitle, setTempTitle] = useState('');
   const [tempBody, setTempBody] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Error/Status Modal
+  const [statusModal, setStatusModal] = useState<{show: boolean, type: 'error' | 'balance' | 'success', title: string, message: string}>({
+    show: false,
+    type: 'error',
+    title: '',
+    message: ''
+  });
 
   // Recharge Form States
   const [rechargeAmount, setRechargeAmount] = useState('');
@@ -136,7 +144,12 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
       fetchUserTransactions();
       setTimeout(() => setRequestSuccess(false), 5000);
     } catch (err: any) {
-      alert(err.message);
+      setStatusModal({
+        show: true,
+        type: 'error',
+        title: 'Request Failed',
+        message: err.message
+      });
     } finally {
       setRequesting(false);
     }
@@ -154,7 +167,13 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
       triggerRefresh();
       setTimeout(() => setBulkSuccess(false), 3000);
     } catch (err: any) { 
-      alert(err.message); 
+      const isBalanceError = err.message.toLowerCase().includes('balance');
+      setStatusModal({
+        show: true,
+        type: isBalanceError ? 'balance' : 'error',
+        title: isBalanceError ? (lang === 'bn' ? 'ব্যালেন্স শেষ!' : 'Out of Balance!') : (lang === 'bn' ? 'ব্যর্থ' : 'Failed'),
+        message: err.message
+      });
     } finally { setSendingBulk(false); }
   };
 
@@ -390,7 +409,61 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
         )}
       </div>
 
-      {/* Bulk SMS Success Popup - Outside transformed parent */}
+      {/* Premium Status Modal for Balance/Errors */}
+      {statusModal.show && (
+        <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[2000] flex items-center justify-center p-8 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_50px_120px_rgba(0,0,0,0.15)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+             
+             <div className="relative mb-8">
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto border-4 shadow-inner relative z-10 transition-all duration-700 ${
+                  statusModal.type === 'balance' ? 'bg-orange-50 text-orange-500 border-orange-100' :
+                  statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' :
+                  'bg-red-50 text-red-500 border-red-100'
+                }`}>
+                  {statusModal.type === 'balance' ? <Zap size={54} strokeWidth={2.5} fill="currentColor" /> :
+                   statusModal.type === 'success' ? <CheckCircle2 size={54} strokeWidth={2.5} /> :
+                   <AlertCircle size={54} strokeWidth={2.5} />}
+                </div>
+                {statusModal.type !== 'success' && (
+                  <div className={`absolute inset-0 rounded-full animate-ping opacity-20 mx-auto w-24 h-24 ${statusModal.type === 'balance' ? 'bg-orange-400' : 'bg-red-400'}`}></div>
+                )}
+             </div>
+
+             <h3 className="text-[24px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{statusModal.title}</h3>
+             <p className="text-[13px] font-bold text-slate-500 mt-3 font-noto px-2 leading-relaxed">
+               {statusModal.message}
+             </p>
+             
+             <div className="flex flex-col gap-3 mt-10">
+                {statusModal.type === 'balance' ? (
+                  <>
+                    <button 
+                      onClick={() => { setStatusModal({ ...statusModal, show: false }); setActiveTab('recharge'); }} 
+                      className="w-full py-5 bg-[#8D30F4] text-white font-black rounded-full shadow-xl shadow-purple-100 active:scale-95 transition-all text-sm uppercase tracking-[0.1em] flex items-center justify-center gap-3"
+                    >
+                      <Zap size={18} fill="currentColor" /> রিচার্জ করুন
+                    </button>
+                    <button 
+                      onClick={() => setStatusModal({ ...statusModal, show: false })} 
+                      className="w-full py-4 bg-slate-50 text-slate-400 font-black rounded-full text-[11px] uppercase tracking-widest active:scale-95 transition-all"
+                    >
+                      {lang === 'bn' ? 'বাতিল' : 'Cancel'}
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => setStatusModal({ ...statusModal, show: false })} 
+                    className={`w-full py-5 font-black rounded-full text-sm uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-500 text-white shadow-red-100'}`}
+                  >
+                    {lang === 'bn' ? 'ঠিক আছে' : 'Continue'}
+                  </button>
+                )}
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk SMS Success Popup */}
       {showSuccessPopup && (
         <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[1000] flex items-center justify-center p-8 animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-12 text-center shadow-[0_40px_100px_rgba(141,48,244,0.3)] border border-[#8D30F4]/10 animate-in zoom-in-95 duration-300">
@@ -408,15 +481,14 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
            </div>
         </div>
       )}
-
-      {/* Add/Edit Modal - Outside transformed parent */}
+      
+      {/* (Rest of existing modals: Add/Edit/Delete Template) */}
       {showAddModal && (
         <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[500] flex items-center justify-center p-6 animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(141,48,244,0.2)] border border-[#8D30F4]/5 relative animate-in zoom-in-95 duration-300">
               <button onClick={() => setShowAddModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-[#8D30F4] transition-all p-1">
                  <X size={26} strokeWidth={3} />
               </button>
-              
               <div className="flex items-center gap-5 mb-8">
                  <div className="w-16 h-16 bg-[#8D30F4]/10 rounded-[1.8rem] flex items-center justify-center text-[#8D30F4] border border-[#8D30F4]/10 shadow-inner">
                     <MessageSquare size={32} />
@@ -426,7 +498,6 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">SMS Template</p>
                  </div>
               </div>
-
               <div className="space-y-6">
                  <div className="space-y-2 px-1">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-1">শিরোনাম</label>
@@ -436,7 +507,6 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-1">মেসেজ বডি</label>
                     <textarea className="w-full h-32 bg-slate-50 border-2 border-slate-100 rounded-[1.8rem] px-6 py-4 font-bold text-slate-600 font-noto outline-none focus:border-[#8D30F4]/30 resize-none" placeholder="আপনার মেসেজ এখানে লিখুন..." value={tempBody} onChange={(e) => setTempBody(e.target.value)} />
                  </div>
-                 
                  <button onClick={handleSaveTemplate} disabled={isSaving || !tempTitle || !tempBody} className="w-full h-16 premium-btn text-white font-black rounded-full shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all text-lg">
                     {isSaving ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> {editingId ? 'আপডেট করুন' : 'সেভ করুন'}</>}
                  </button>
@@ -445,10 +515,9 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
         </div>
       )}
 
-      {/* Delete Confirmation Modal - Outside transformed parent */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[1000] flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-500">
              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
                 <AlertTriangle size={40} />
              </div>

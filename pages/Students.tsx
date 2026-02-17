@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Plus, Search, CheckCircle2, MessageSquare, X, BookOpen, ChevronDown, Check, PhoneCall, Smartphone, Loader2, ListChecks, MessageCircle, Phone, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Search, CheckCircle2, MessageSquare, X, BookOpen, ChevronDown, Check, PhoneCall, Smartphone, Loader2, ListChecks, MessageCircle, Phone, AlertCircle, AlertTriangle, Zap } from 'lucide-react';
 import { supabase, offlineApi, smsApi } from '../supabase';
 import { Class, Student, Language, Teacher } from '../types';
 import { t } from '../translations';
@@ -17,6 +17,7 @@ interface StudentsProps {
   canSendSMS?: boolean;
   teacher?: Teacher | null;
   madrasahId?: string;
+  onNavigateToWallet?: () => void;
 }
 
 const STATIC_DEFAULTS = [
@@ -24,7 +25,7 @@ const STATIC_DEFAULTS = [
   { id: 'def-2', title: 'অনুপস্থিতি (Absence)', body: 'আস-সালামু আলাইকুম, আজ আপনার সন্তান মাদরাসায় অনুপস্থিত। অনুগ্রহ করে কারণ জানান।' }
 ];
 
-const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAddClick, onBack, lang, dataVersion, triggerRefresh, canAdd, canSendSMS, teacher, madrasahId }) => {
+const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAddClick, onBack, lang, dataVersion, triggerRefresh, canAdd, canSendSMS, teacher, madrasahId, onNavigateToWallet }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,7 +35,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [sending, setSending] = useState(false);
-  const [statusModal, setStatusModal] = useState<{show: boolean, type: 'success' | 'error', title: string, message: string}>({
+  const [statusModal, setStatusModal] = useState<{show: boolean, type: 'success' | 'error' | 'balance', title: string, message: string}>({
     show: false,
     type: 'success',
     title: '',
@@ -139,10 +140,11 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
       setIsSelectionMode(false);
       setSelectedIds(new Set());
     } catch (err: any) {
+      const isBalanceError = err.message.toLowerCase().includes('balance');
       setStatusModal({
         show: true,
-        type: 'error',
-        title: lang === 'bn' ? 'ব্যর্থ' : 'Failed',
+        type: isBalanceError ? 'balance' : 'error',
+        title: isBalanceError ? (lang === 'bn' ? 'ব্যালেন্স শেষ!' : 'Out of Balance!') : (lang === 'bn' ? 'ব্যর্থ' : 'Failed'),
         message: err.message
       });
     } finally { setSending(false); }
@@ -301,22 +303,58 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
         </div>
       )}
 
-      {/* Premium Status Modal */}
+      {/* Premium Status Modal - Updated Design */}
       {statusModal.show && (
-        <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[4rem] p-12 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
-             <div className={`w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-10 transition-transform duration-700 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 'bg-red-50 text-red-500 border-red-100'} border-4 shadow-inner`}>
-                {statusModal.type === 'success' ? <CheckCircle2 size={64} strokeWidth={2.5} /> : <AlertCircle size={64} strokeWidth={2.5} />}
-             </div>
-             <h3 className="text-[26px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{statusModal.title}</h3>
-             <p className="text-[14px] font-bold text-slate-400 mt-4 font-noto px-4 leading-relaxed">{statusModal.message}</p>
+        <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[2000] flex items-center justify-center p-8 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_50px_120px_rgba(0,0,0,0.15)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
              
-             <button 
-                onClick={() => setStatusModal({ ...statusModal, show: false })} 
-                className={`w-full mt-10 py-5 font-black rounded-full text-sm uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-500 text-white shadow-red-100'}`}
-             >
-                {lang === 'bn' ? 'ঠিক আছে' : 'Continue'}
-             </button>
+             {/* Dynamic Icon Section */}
+             <div className="relative mb-8">
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto border-4 shadow-inner relative z-10 transition-all duration-700 ${
+                  statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 
+                  statusModal.type === 'balance' ? 'bg-orange-50 text-orange-500 border-orange-100' :
+                  'bg-red-50 text-red-500 border-red-100'
+                }`}>
+                  {statusModal.type === 'success' ? <CheckCircle2 size={54} strokeWidth={2.5} /> : 
+                   statusModal.type === 'balance' ? <Zap size={54} strokeWidth={2.5} fill="currentColor" /> :
+                   <AlertCircle size={54} strokeWidth={2.5} />}
+                </div>
+                {/* Background pulse for errors/balance */}
+                {statusModal.type !== 'success' && (
+                  <div className={`absolute inset-0 rounded-full animate-ping opacity-20 mx-auto w-24 h-24 ${statusModal.type === 'balance' ? 'bg-orange-400' : 'bg-red-400'}`}></div>
+                )}
+             </div>
+
+             <h3 className="text-[24px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{statusModal.title}</h3>
+             <p className="text-[13px] font-bold text-slate-500 mt-3 font-noto px-2 leading-relaxed">
+               {statusModal.message}
+             </p>
+             
+             <div className="flex flex-col gap-3 mt-10">
+                {statusModal.type === 'balance' ? (
+                  <>
+                    <button 
+                      onClick={() => { setStatusModal({ ...statusModal, show: false }); if (onNavigateToWallet) onNavigateToWallet(); }} 
+                      className="w-full py-5 bg-[#8D30F4] text-white font-black rounded-full shadow-xl shadow-purple-100 active:scale-95 transition-all text-sm uppercase tracking-[0.1em] flex items-center justify-center gap-3"
+                    >
+                      <Zap size={18} fill="currentColor" /> রিচার্জ করুন
+                    </button>
+                    <button 
+                      onClick={() => setStatusModal({ ...statusModal, show: false })} 
+                      className="w-full py-4 bg-slate-50 text-slate-400 font-black rounded-full text-[11px] uppercase tracking-widest active:scale-95 transition-all"
+                    >
+                      {lang === 'bn' ? 'বাতিল' : 'Cancel'}
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => setStatusModal({ ...statusModal, show: false })} 
+                    className={`w-full py-5 font-black rounded-full text-sm uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-500 text-white shadow-red-100'}`}
+                  >
+                    {lang === 'bn' ? 'ঠিক আছে' : 'Continue'}
+                  </button>
+                )}
+             </div>
           </div>
         </div>
       )}
