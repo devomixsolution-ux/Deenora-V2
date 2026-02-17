@@ -17,28 +17,27 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 /**
  * Normalizes phone numbers to the 880XXXXXXXXXX format (13 digits).
- * Most Bangladeshi gateways require the 880 prefix for local delivery.
  */
 const normalizePhone = (phone: string): string => {
-  let p = phone.replace(/\D/g, ''); // Remove non-digits
+  let p = phone.replace(/\D/g, ''); 
   if (p.length === 13 && p.startsWith('880')) return p;
   
-  // If starts with 880 and longer/shorter, try to fix it
   if (p.startsWith('880')) {
     return p.slice(0, 13);
   }
 
-  // If starts with 01, prepend 88
   if (p.startsWith('0')) {
     return `88${p.slice(0, 11)}`;
   }
   
-  // If starts with 1 (no leading 0), prepend 880
   if (p.startsWith('1') && p.length === 10) {
     return `880${p}`;
   }
 
-  // Fallback for already correct but stripped formats
+  if (p.length === 11 && p.startsWith('01')) {
+    return `88${p}`;
+  }
+
   if (p.length === 10) return `880${p}`;
 
   return p;
@@ -112,7 +111,7 @@ export const smsApi = {
     const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id.trim() : global.reve_caller_id;
     const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id.trim() : global.reve_client_id;
 
-    // 4. Batch Processing - Use very small chunks (15) to stay well within URL length limits
+    // 4. Batch Processing
     const chunkSize = 15; 
     const batches: string[] = [];
     
@@ -130,7 +129,6 @@ export const smsApi = {
         messageContent: message
       }];
 
-      // REVE API expects a JSON string in the 'content' parameter for bulk
       // type=3 is mandatory for Unicode/Bengali characters
       let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(content))}`;
       
@@ -139,15 +137,12 @@ export const smsApi = {
       }
 
       try {
-        // Mode: 'no-cors' is necessary because these gateways rarely support CORS
-        // We use fetch to fire the request. Even if we can't read the response, the request reaches the server.
         await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
       } catch (err) {
-        console.warn("SMS batch trigger network error:", err);
+        console.warn("SMS batch failed to trigger:", err);
       }
     });
 
-    // Execute all batches
     await Promise.all(sendPromises);
     return { success: true };
   },
@@ -176,8 +171,7 @@ export const smsApi = {
 
     const target = normalizePhone(phone);
     
-    // Using /sendtext for single direct messages as per documentation "Submitted API"
-    // Ensured no trailing spaces and strictly defined parameters
+    // Using /sendtext for single direct messages as per documentation
     let apiUrl = `https://smpp.revesms.com:7790/sendtext?apikey=${apiKey}&secretkey=${secretKey}&callerID=${callerId}&toUser=${target}&messageContent=${encodeURIComponent(message)}&type=3`;
     
     if (clientId) apiUrl += `&clientid=${clientId}`;
@@ -185,7 +179,7 @@ export const smsApi = {
     try { 
       await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' }); 
     } catch (e) {
-      console.warn("Direct SMS trigger error:", e);
+      console.warn("Direct SMS failed to trigger:", e);
     }
   }
 };
