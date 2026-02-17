@@ -261,7 +261,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       
       if (error) throw error;
 
-      // RPC রেসপন্স চেক করা
+      // RPC রেসপন্স চেক করা (Database level error capture)
       const res = data as { success: boolean, error?: string };
       if (res && res.success === false) {
         throw new Error(res.error || "Approval failed on server");
@@ -292,7 +292,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       initData(true);
     } catch (err: any) {
       console.error("Approve Error:", err);
-      setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message || "অজানা ত্রুটি দেখা দিয়েছে।" });
+      // Detailed error reporting for debugging
+      const errorMessage = err.message || "অজানা ত্রুটি দেখা দিয়েছে।";
+      setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: errorMessage });
     } finally {
       setApprovingIds(prev => {
         const next = new Set(prev);

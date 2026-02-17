@@ -15,10 +15,15 @@ CREATE OR REPLACE FUNCTION approve_payment_with_sms(t_id UUID, m_id UUID, sms_to
 RETURNS JSON AS $$
 DECLARE
     current_admin_stock INTEGER;
+    stock_id UUID;
 BEGIN
-    -- ১. অ্যাডমিন স্টক চেক করা
-    SELECT remaining_sms INTO current_admin_stock FROM admin_sms_stock LIMIT 1;
+    -- ১. অ্যাডমিন স্টক এবং আইডি চেক করা
+    SELECT id, remaining_sms INTO stock_id, current_admin_stock FROM admin_sms_stock LIMIT 1;
     
+    IF stock_id IS NULL THEN
+        RETURN json_build_object('success', false, 'error', 'অ্যাডমিন স্টক টেবিল সেটআপ করা নেই।');
+    END IF;
+
     IF current_admin_stock IS NULL OR current_admin_stock < sms_to_give THEN
         RETURN json_build_object('success', false, 'error', 'অ্যাডমিন স্টকে পর্যাপ্ত SMS নেই।');
     END IF;
@@ -34,9 +39,10 @@ BEGIN
     SET sms_balance = COALESCE(sms_balance, 0) + sms_to_give 
     WHERE id = m_id;
 
-    -- ৪. অ্যাডমিন স্টক থেকে বিয়োগ করা
+    -- ৪. অ্যাডমিন স্টক থেকে বিয়োগ করা (WHERE clause added to satisfy safety checks)
     UPDATE admin_sms_stock 
-    SET remaining_sms = remaining_sms - sms_to_give;
+    SET remaining_sms = remaining_sms - sms_to_give
+    WHERE id = stock_id;
 
     RETURN json_build_object('success', true);
 EXCEPTION WHEN OTHERS THEN
