@@ -60,11 +60,11 @@ export const smsApi = {
     ]);
 
     const mData = mRes.data;
-    if (!mData) throw new Error("Could not load madrasah profile.");
+    if (!mData) throw new Error("মাদরাসা প্রোফাইল লোড করা যায়নি।");
     
     const balance = mData.sms_balance || 0;
     if (balance < students.length) {
-      throw new Error(`Insufficient SMS balance. Needed: ${students.length}, Available: ${balance}`);
+      throw new Error(`ব্যালেন্স পর্যাপ্ত নয়। প্রয়োজন: ${students.length}, আছে: ${balance}`);
     }
 
     // 2. Deduct balance via RPC
@@ -74,39 +74,52 @@ export const smsApi = {
       p_message: message
     });
 
-    if (rpcError) throw new Error("Balance Update Failed: " + rpcError.message);
-    if (rpcData && rpcData.success === false) throw new Error(rpcData.error || "Transaction denied");
+    if (rpcError) throw new Error("ব্যালেন্স আপডেট করতে সমস্যা হয়েছে: " + rpcError.message);
+    if (rpcData && rpcData.success === false) throw new Error(rpcData.error || "ট্রানজ্যাকশন সফল হয়নি।");
 
-    // 3. Send SMS to gateway
+    // 3. Prepare credentials
     const apiKey = (mData.reve_api_key && mData.reve_api_key.trim() !== '') ? mData.reve_api_key : global.reve_api_key;
     const secretKey = (mData.reve_secret_key && mData.reve_secret_key.trim() !== '') ? mData.reve_secret_key : global.reve_secret_key;
     const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id : global.reve_caller_id;
     const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id : global.reve_client_id;
 
-    const phoneList = students.map(s => {
-      let p = s.guardian_phone.replace(/\D/g, '');
-      return p.startsWith('88') ? p : `88${p}`;
-    }).join(',');
-
-    const contentArray = [{
-      callerID: callerId,
-      toUser: phoneList,
-      messageContent: message
-    }];
-
-    let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&content=${encodeURIComponent(JSON.stringify(contentArray))}`;
+    // 4. Chunking Logic (Send in batches of 30 to avoid URL length issues)
+    const chunkSize = 30;
+    const phoneBatches: string[] = [];
     
-    if (clientId) {
-      apiUrl += `&clientid=${clientId}`;
+    for (let i = 0; i < students.length; i += chunkSize) {
+      const chunk = students.slice(i, i + chunkSize);
+      const phones = chunk.map(s => {
+        let p = s.guardian_phone.replace(/\D/g, '');
+        return p.startsWith('88') ? p : `88${p}`;
+      }).join(',');
+      phoneBatches.push(phones);
     }
 
-    try {
-      await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
-      return { success: true };
-    } catch (err) {
-      console.warn("SMS triggered, but response not readable (CORS):", err);
-      return { success: true };
-    }
+    // 5. Send batches
+    const sendPromises = phoneBatches.map(async (phoneList) => {
+      const contentArray = [{
+        callerID: callerId,
+        toUser: phoneList,
+        messageContent: message
+      }];
+
+      // type=3 is mandatory for Unicode/Bengali SMS in REVE API
+      let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(contentArray))}`;
+      
+      if (clientId) {
+        apiUrl += `&clientid=${clientId}`;
+      }
+
+      try {
+        await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
+      } catch (err) {
+        console.warn("SMS triggered with batch, response opaque due to CORS policy.");
+      }
+    });
+
+    await Promise.all(sendPromises);
+    return { success: true };
   },
 
   sendDirect: async (phone: string, message: string, madrasahId?: string) => {
@@ -134,7 +147,8 @@ export const smsApi = {
     const p = phone.replace(/\D/g, '');
     const target = p.startsWith('88') ? p : `88${p}`;
     const content = [{ callerID: callerId, toUser: target, messageContent: message }];
-    let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&content=${encodeURIComponent(JSON.stringify(content))}`;
+    // type=3 added for direct messages too
+    let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(content))}`;
     
     if (clientId) apiUrl += `&clientid=${clientId}`;
     
