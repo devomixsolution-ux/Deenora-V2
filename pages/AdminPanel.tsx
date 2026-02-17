@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+// Fix: Import icons from lucide-react instead of ../supabase
 import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap, Banknote, PhoneCall } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, Transaction, AdminSMSStock } from '../types';
@@ -30,7 +31,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [smsToCredit, setSmsToCredit] = useState<{ [key: string]: string }>({});
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
   
-  // New state for SMS toggle (defaults to true)
   const [smsEnabledMap, setSmsEnabledMap] = useState<{ [key: string]: boolean }>({});
 
   const [statusModal, setStatusModal] = useState<{show: boolean, type: 'success' | 'error', title: string, message: string}>({
@@ -126,8 +126,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     return data || [];
   };
 
-  const initData = useCallback(async () => {
-    setLoading(true);
+  const initData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     let isMounted = true;
     try {
       if (view === 'list' || view === 'dashboard') {
@@ -159,7 +159,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         if (isMounted) {
           setPendingTrans(pTrans);
           setTransactionHistory(tHist);
-          // Initialize SMS toggle for each pending trans if not already set
           const newSmsMap = { ...smsEnabledMap };
           pTrans.forEach(tr => {
             if (newSmsMap[tr.id] === undefined) newSmsMap[tr.id] = true;
@@ -170,7 +169,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     } catch (err) { 
       console.error("AdminPanel Init Error:", err); 
     } finally { 
-      if (isMounted) setLoading(false); 
+      if (isMounted && !silent) setLoading(false); 
     }
     return () => { isMounted = false; };
   }, [view, madrasahs.length]);
@@ -186,46 +185,43 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     else if (currentView === 'list') setView('list');
   }, [currentView]);
 
-  const fetchDynamicStats = async (madrasahId: string) => {
-    setIsRefreshingStats(true);
+  // Fix: Add missing handleUserClick function to manage details view and stats
+  const handleUserClick = async (user: MadrasahWithStats) => {
+    setSelectedUser(user);
+    setEditName(user.name || '');
+    setEditPhone(user.phone || '');
+    setEditLoginCode(user.login_code || '');
+    setEditActive(user.is_active);
+    setEditReveApiKey(user.reve_api_key || '');
+    setEditReveSecretKey(user.reve_secret_key || '');
+    setEditReveCallerId(user.reve_caller_id || '');
+    
+    setView('details');
+    
+    // Fetch user stats
+    setUserStats({ students: 0, classes: 0, teachers: 0 });
     try {
-      const [studentsRes, classesRes, teachersRes] = await Promise.all([
-        supabase.from('students').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
-        supabase.from('classes').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
-        supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId)
+      const [stdRes, clsRes, teaRes] = await Promise.all([
+        supabase.from('students').select('*', { count: 'exact', head: true }).eq('madrasah_id', user.id),
+        supabase.from('classes').select('*', { count: 'exact', head: true }).eq('madrasah_id', user.id),
+        supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('madrasah_id', user.id)
       ]);
-      const stats = {
-        students: studentsRes.count || 0,
-        classes: classesRes.count || 0,
-        teachers: teachersRes.count || 0
-      };
-      setUserStats(stats);
-      setMadrasahs(prev => prev.map(m => m.id === madrasahId ? { ...m, student_count: stats.students, class_count: stats.classes } : m));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsRefreshingStats(false);
+      setUserStats({
+        students: stdRes.count || 0,
+        classes: clsRes.count || 0,
+        teachers: teaRes.count || 0
+      });
+    } catch (e) {
+      console.error("Error fetching user stats:", e);
     }
   };
 
-  const handleUserClick = async (m: MadrasahWithStats) => {
-    setSelectedUser(m);
-    setEditName(m.name || '');
-    setEditPhone(m.phone || '');
-    setEditLoginCode(m.login_code || '');
-    setEditActive(m.is_active !== false);
-    setEditReveApiKey(m.reve_api_key || '');
-    setEditReveSecretKey(m.reve_secret_key || '');
-    setEditReveCallerId(m.reve_caller_id || '');
-    setView('details');
-    fetchDynamicStats(m.id);
-  };
-
+  // Fix: Add missing handleUserUpdate function to save changes to madrasah profile
   const handleUserUpdate = async () => {
     if (!selectedUser) return;
     setIsUpdatingUser(true);
     try {
-      const updateData = {
+      const { error } = await supabase.from('madrasahs').update({
         name: editName.trim(),
         phone: editPhone.trim(),
         login_code: editLoginCode.trim(),
@@ -233,13 +229,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         reve_api_key: editReveApiKey.trim() || null,
         reve_secret_key: editReveSecretKey.trim() || null,
         reve_caller_id: editReveCallerId.trim() || null
-      };
-      const { error } = await supabase.from('madrasahs').update(updateData).eq('id', selectedUser.id);
+      }).eq('id', selectedUser.id);
+      
       if (error) throw error;
-      setMadrasahs(prev => prev.map(m => m.id === selectedUser.id ? { ...m, ...updateData } : m));
-      setStatusModal({ show: true, type: 'success', title: lang === 'bn' ? 'সফল হয়েছে' : 'Updated', message: lang === 'bn' ? 'মাদরাসার তথ্য আপডেট করা হয়েছে।' : 'User profile updated successfully.' });
+      
+      setStatusModal({ show: true, type: 'success', title: 'সফল', message: 'মাদরাসা প্রোফাইল আপডেট হয়েছে।' });
+      initData(true);
+      setView('list');
     } catch (err: any) {
-      setStatusModal({ show: true, type: 'error', title: 'Failed', message: err.message });
+      setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
     } finally {
       setIsUpdatingUser(false);
     }
@@ -262,6 +260,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       });
       
       if (error) throw error;
+
+      // RPC রেসপন্স চেক করা
+      const res = data as { success: boolean, error?: string };
+      if (res && res.success === false) {
+        throw new Error(res.error || "Approval failed on server");
+      }
       
       // ২. ইউজারকে কনফার্মেশন SMS পাঠানো (যদি টগল চালু থাকে)
       const isSmsEnabled = smsEnabledMap[tr.id] !== false;
@@ -269,10 +273,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         const userPhone = tr.madrasahs?.phone || tr.sender_phone;
         if (userPhone) {
           const msg = `আস-সালামু আলাইকুম, আপনার পেমেন্ট অনুমোদিত হয়েছে। আপনার অ্যাকাউন্টে ${sms} টি SMS যোগ করা হয়েছে। ধন্যবাদ।`;
-          await smsApi.sendDirect(userPhone, msg);
+          // Fire and forget SMS to avoid blocking UI
+          smsApi.sendDirect(userPhone, msg).catch(err => console.error("SMS Send Error:", err));
         }
       }
 
+      // ৩. লোকাল স্টেট আপডেট করা (সফল হলে সাথে সাথে লিস্ট থেকে সরিয়ে দেয়া)
+      setPendingTrans(prev => prev.filter(p => p.id !== tr.id));
+      
       setStatusModal({ 
         show: true, 
         type: 'success', 
@@ -280,10 +288,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         message: isSmsEnabled ? 'রিচার্জ সফল হয়েছে এবং ইউজারকে SMS পাঠানো হয়েছে।' : 'রিচার্জ সফল হয়েছে (SMS পাঠানো হয়নি)।' 
       });
       
-      // Refresh data immediately to reflect in history
-      initData();
+      // ব্যাকগ্রাউন্ডে ডাটা রিফ্রেশ করা
+      initData(true);
     } catch (err: any) {
-      setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
+      console.error("Approve Error:", err);
+      setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message || "অজানা ত্রুটি দেখা দিয়েছে।" });
     } finally {
       setApprovingIds(prev => {
         const next = new Set(prev);
@@ -300,16 +309,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       const { error } = await supabase.from('transactions').update({ status: 'rejected' }).eq('id', rejectConfirm.id);
       if (error) throw error;
       
-      // ইউজারকে রিজেক্ট হওয়ার SMS পাঠানো (টগল চেক করা যেতে পারে, তবে ডিফল্ট হিসেবে পাঠানো হচ্ছে)
       const userPhone = rejectConfirm.madrasahs?.phone || rejectConfirm.sender_phone;
       if (userPhone) {
         const msg = `দুঃখিত, আপনার পেমেন্ট রিকোয়েস্টটি (${rejectConfirm.amount} ৳) বাতিল করা হয়েছে। বিস্তারিত জানতে যোগাযোগ করুন।`;
-        await smsApi.sendDirect(userPhone, msg);
+        smsApi.sendDirect(userPhone, msg).catch(err => console.error("SMS Send Error:", err));
       }
 
+      setPendingTrans(prev => prev.filter(p => p.id !== rejectConfirm.id));
       setRejectConfirm(null);
       setStatusModal({ show: true, type: 'success', title: 'বাতিল', message: 'পেমেন্ট রিকোয়েস্ট বাতিল করা হয়েছে' });
-      initData();
+      initData(true);
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
     } finally {
@@ -336,7 +345,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
             <div className="space-y-6 animate-in slide-in-from-bottom-5">
               <div className="flex items-center justify-between px-2">
                 <h1 className="text-xl font-black text-white font-noto drop-shadow-md">সিস্টেম ড্যাশবোর্ড</h1>
-                <button onClick={initData} className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md active:scale-95 transition-all">
+                <button onClick={() => initData()} className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md active:scale-95 transition-all">
                    <RefreshCw size={18} />
                 </button>
               </div>
@@ -392,27 +401,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                   </div>
                 </div>
               </div>
-
-              <div className="bg-white/95 p-6 rounded-[2.5rem] border border-white shadow-xl space-y-4">
-                  <h4 className="text-[11px] font-black text-[#2E0B5E] uppercase tracking-widest px-1 flex items-center gap-2">
-                     <Activity size={14} className="text-[#8D30F4]" /> Recent System Activity (Top 20)
-                  </h4>
-                  <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
-                     {globalRecentCalls.length > 0 ? globalRecentCalls.slice(0, 20).map(call => (
-                        <div key={call.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
-                           <div className="min-w-0 flex-1">
-                              <p className="text-[10px] font-black text-[#8D30F4] uppercase tracking-tighter truncate">{call.madrasahs?.name}</p>
-                              <p className="text-sm font-black text-[#2E0B5E] font-noto truncate">{call.students?.student_name}</p>
-                           </div>
-                           <div className="text-right shrink-0 ml-4 opacity-60">
-                              <p className="text-[9px] font-bold text-slate-400">{new Date(call.called_at).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</p>
-                           </div>
-                        </div>
-                     )) : (
-                        <p className="text-center py-4 text-slate-300 text-[10px] font-black uppercase">No recent calls</p>
-                     )}
-                  </div>
-              </div>
             </div>
           )}
 
@@ -465,7 +453,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
             <div className="space-y-8 px-1">
               <div className="flex items-center justify-between px-2">
                 <h1 className="text-xl font-black text-white font-noto drop-shadow-md">পেমেন্ট ম্যানেজমেন্ট</h1>
-                <button onClick={initData} className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md active:scale-95 transition-all">
+                <button onClick={() => initData()} className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md active:scale-95 transition-all">
                    <RefreshCw size={18} />
                 </button>
               </div>
@@ -494,7 +482,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                         </div>
                       </div>
                       
-                      {/* SMS Toggle UI */}
                       <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
                         <div className="flex items-center gap-2">
                            <MessageSquare size={16} className={smsEnabledMap[tr.id] ? "text-[#8D30F4]" : "text-slate-300"} />
@@ -537,7 +524,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       </div>
                     </div>
                   )) : (
-                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/20">
+                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/30">
                       <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No Pending Requests</p>
                     </div>
                   )}
