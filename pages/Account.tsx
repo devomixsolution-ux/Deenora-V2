@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { LogOut, Camera, Loader2, User as UserIcon, ShieldCheck, Database, ChevronRight, Check, MessageSquare, Zap, Globe, Smartphone, Save, Users, Layers, Edit3, UserPlus, Languages, Mail, Key, Settings, Fingerprint, Copy, History, Server, CreditCard, Shield, Sliders, Activity, Bell, RefreshCw, AlertTriangle, GraduationCap, ChevronLeft, ArrowRight, LayoutDashboard, Settings2, X, Sparkles, Box, ShieldAlert, Award, CheckCircle2, Lock, Terminal, Cpu } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, View } from '../types';
@@ -216,9 +217,9 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         <button onClick={onLogout} className="w-full p-8 flex items-center justify-between group"><div className="flex items-center gap-6"><div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center"><LogOut size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-red-600 font-noto">{t('logout', lang)}</h5><p className="text-[10px] font-bold text-red-300 uppercase tracking-widest mt-1">{t('logout_system', lang)}</p></div></div><ChevronRight size={22} className="text-red-100" /></button>
       </div>
 
-      {/* SYSTEM CORE UPDATE POPUP */}
-      {isEditingGlobal && (
-        <div className="fixed inset-0 bg-[#080A12]/90 backdrop-blur-3xl z-[9001] flex items-start justify-center p-4 pt-12 animate-in fade-in duration-300">
+      {/* SYSTEM CORE UPDATE POPUP - PORTALED */}
+      {isEditingGlobal && createPortal(
+        <div className="modal-overlay bg-[#080A12]/90 backdrop-blur-3xl animate-in fade-in duration-300">
            <div className="bg-[#1A0B2E] w-full max-w-sm rounded-[3rem] shadow-2xl animate-in zoom-in-95 duration-500 border border-white/10 overflow-hidden flex flex-col max-h-[85vh] relative">
               <div className="p-5 shrink-0 relative overflow-hidden">
                  <div className="flex items-center justify-between relative z-10">
@@ -247,19 +248,19 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                  <div className="pt-2"><button onClick={handleSaveGlobalSettings} disabled={saving} className="w-full h-13 bg-gradient-to-r from-[#8D30F4] to-[#A179FF] text-white font-black rounded-full shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/20 text-xs uppercase tracking-widest">{saving ? <Loader2 className="animate-spin" size={18} /> : <><RefreshCw size={16} /> Push Changes</>}</button></div>
               </div>
            </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Edit Profile Modal - Logo option moved here */}
-      {isEditingProfile && (
-        <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-start justify-center p-4 pt-16">
+      {/* Edit Profile Modal - PORTALED */}
+      {isEditingProfile && createPortal(
+        <div className="modal-overlay bg-[#080A12]/80 backdrop-blur-2xl animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-500 relative max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3"><div className="w-10 h-10 bg-purple-50 text-[#8D30F4] rounded-xl flex items-center justify-center"><Edit3 size={20} /></div><h3 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">অ্যাকাউন্ট আপডেট</h3></div>
                 <button onClick={() => setIsEditingProfile(false)} className="w-9 h-9 bg-slate-50 text-slate-300 rounded-xl flex items-center justify-center"><X size={20} /></button>
               </div>
 
-              {/* Logo Section in Settings */}
               <div className="flex flex-col items-center py-4 bg-slate-50 rounded-[2rem] border border-slate-100">
                 <div className="relative">
                   <div className="w-24 h-24 bg-white p-1.5 rounded-full shadow-lg border-4 border-white flex items-center justify-center overflow-hidden">
@@ -288,7 +289,8 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                  <button onClick={handleUpdate} disabled={saving} className="flex-[2] py-4 bg-[#8D30F4] text-white font-black rounded-2xl text-[10px] uppercase shadow-lg flex items-center justify-center gap-2">{saving ? <Loader2 className="animate-spin" size={16} /> : 'সংরক্ষণ করুন'}</button>
               </div>
            </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

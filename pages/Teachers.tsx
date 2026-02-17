@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, UserPlus, ShieldCheck, User as UserIcon, Loader2, Save, X, Phone, Key, CheckCircle2, Trash2, Edit3, Smartphone, MessageSquare, Layers, MessageCircle, Shield, Check, ChevronRight, AlertTriangle, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabase';
 import { Teacher, Language, Madrasah } from '../types';
@@ -230,9 +231,9 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
         )}
       </div>
 
-      {isModalOpen && (
-        <div className="modal-overlay bg-[#080A12]/60 backdrop-blur-xl p-4 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl relative animate-in zoom-in-95 duration-300 border border-[#8D30F4]/5 flex flex-col overflow-hidden max-h-[90vh]">
+      {isModalOpen && createPortal(
+        <div className="modal-overlay bg-[#080A12]/60 backdrop-blur-xl animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl relative animate-in zoom-in-95 duration-500 border border-[#8D30F4]/5 flex flex-col overflow-hidden max-h-[90vh]">
               
               <div className="flex items-center justify-between p-8 pb-4 shrink-0">
                  <div className="flex items-center gap-4">
@@ -335,16 +336,16 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
                           </>
                        )}
                     </button>
-                    <div className="h-10"></div> {/* Extra spacing for mobile keyboards */}
+                    <div className="h-10"></div>
                  </div>
               </div>
            </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Warning/Validation Error Modal - Enhanced Design with .modal-overlay */}
-      {warningModal.show && (
-        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
+      {warningModal.show && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-500">
               <div className="relative">
                  <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto border border-red-100 relative z-10">
@@ -365,12 +366,12 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
                 ঠিক আছে
               </button>
            </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Teacher Deletion Modal - Better Design with .modal-overlay */}
-      {showDeleteConfirm && (
-        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
+      {showDeleteConfirm && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-500">
              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
                 <AlertTriangle size={40} />
@@ -400,7 +401,8 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
                 </button>
              </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

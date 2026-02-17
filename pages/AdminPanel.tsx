@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, Search, ChevronRight, User as UserIcon, ShieldCheck, Database, Globe, CheckCircle, XCircle, CreditCard, Save, X, Settings, Smartphone, MessageSquare, Key, Shield, ArrowLeft, Copy, Check, Calendar, Users, Layers, MonitorSmartphone, Server, BarChart3, TrendingUp, RefreshCcw, Clock, Hash, History as HistoryIcon, Zap, Activity, PieChart, Users2, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, Trash2, Sliders, ToggleLeft, ToggleRight, GraduationCap, Banknote, PhoneCall } from 'lucide-react';
 import { supabase, smsApi } from '../supabase';
 import { Madrasah, Language, Transaction, AdminSMSStock } from '../types';
@@ -621,9 +622,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         </>
       )}
 
-      {/* Reject Confirmation Modal - Top-Aligned and Compact */}
-      {rejectConfirm && (
-        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-3xl z-[1001] flex items-start justify-center p-6 pt-24 animate-in fade-in duration-300">
+      {/* Reject Confirmation Modal - PORTALED */}
+      {rejectConfirm && createPortal(
+        <div className="modal-overlay bg-[#080A12]/60 backdrop-blur-3xl animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-sm rounded-[3rem] p-8 shadow-[0_40px_100px_rgba(0,0,0,0.15)] text-center animate-in zoom-in-95 duration-500 border border-red-50">
               <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner border border-red-100">
                  <AlertTriangle size={32} />
@@ -639,12 +640,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                  <button onClick={() => setRejectConfirm(null)} disabled={isRejecting} className="w-full py-3 bg-slate-50 text-slate-400 font-black rounded-full active:scale-95 transition-all text-[10px] uppercase tracking-widest">পিছনে যান</button>
               </div>
            </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Status Modal - Top-Aligned and Compact */}
-      {statusModal.show && (
-        <div className="fixed inset-0 bg-[#080A12]/50 backdrop-blur-3xl z-[2000] flex items-start justify-center p-6 pt-32 animate-in fade-in duration-300">
+      {/* Status Modal - PORTALED */}
+      {statusModal.show && createPortal(
+        <div className="modal-overlay bg-[#080A12]/50 backdrop-blur-3xl animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 transition-transform duration-700 ${statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 'bg-red-50 text-red-500 border-red-100'} border-4 shadow-inner`}>
                 {statusModal.type === 'success' ? <CheckCircle2 size={40} strokeWidth={2.5} /> : <AlertCircle size={40} strokeWidth={2.5} />}
@@ -655,7 +657,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                 {lang === 'bn' ? 'ঠিক আছে' : 'Continue'}
              </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

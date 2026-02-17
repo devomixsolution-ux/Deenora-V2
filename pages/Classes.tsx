@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, ChevronRight, BookOpen, Users, Edit3, Trash2, X, Check, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { supabase, offlineApi } from '../supabase';
 import { Class, Language, Madrasah } from '../types';
@@ -151,8 +152,8 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
         </div>
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[999] flex items-center justify-center p-8 animate-in fade-in duration-300">
+      {showModal && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(141,48,244,0.2)] border border-[#8D30F4]/5 relative animate-in zoom-in-95 duration-300">
             <button onClick={() => setShowModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-[#8D30F4] transition-all"><X size={26} strokeWidth={3} /></button>
             
@@ -185,11 +186,12 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[1000] flex items-center justify-center p-8 animate-in fade-in duration-300">
+      {showDeleteConfirm && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-300">
              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
                 <AlertTriangle size={40} />
@@ -205,7 +207,8 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
                 <button onClick={() => setShowDeleteConfirm(null)} className="w-full py-4 bg-slate-50 text-slate-400 font-black rounded-full active:scale-95 transition-all text-sm uppercase tracking-widest">বাতিল</button>
              </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

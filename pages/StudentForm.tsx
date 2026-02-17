@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, Save, User as UserIcon, Phone, List, Hash, Loader2, ChevronDown, Camera, X, Check, UserCheck, AlertCircle, BookOpen } from 'lucide-react';
 import { supabase, offlineApi } from '../supabase';
 import { Student, Class, Language, Madrasah } from '../types';
@@ -226,10 +227,10 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
         </button>
       </form>
 
-      {showClassModal && (
-        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(141,48,244,0.2)] border border-[#8D30F4]/5 relative animate-in zoom-in-95 duration-300">
-            <button onClick={() => setShowClassModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-[#8D30F4] hover:scale-110 transition-all"><X size={26} strokeWidth={3} /></button>
+      {showClassModal && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(141,48,244,0.2)] border border-[#8D30F4]/5 relative animate-in zoom-in-95 duration-300">
+            <button onClick={() => setShowClassModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-[#8D30F4] transition-all"><X size={26} strokeWidth={3} /></button>
             
             <div className="flex items-center gap-5 mb-8">
                <div className="w-16 h-16 bg-[#8D30F4]/10 rounded-[1.8rem] flex items-center justify-center text-[#8D30F4] shrink-0 border border-[#8D30F4]/10 shadow-inner">
@@ -250,11 +251,12 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
                ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {errorModal.show && (
-         <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
+      {errorModal.show && createPortal(
+         <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-sm p-10 rounded-[3.5rem] shadow-[0_40px_100px_rgba(239,68,68,0.2)] text-center space-y-6 animate-in zoom-in-95 duration-300 border border-red-50">
                <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
                  <AlertCircle size={40} />
@@ -265,7 +267,8 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
                </div>
                <button onClick={() => setErrorModal({show: false, message: ''})} className="w-full py-5 bg-slate-100 text-[#2E0B5E] rounded-full font-black text-sm uppercase tracking-widest active:scale-95 transition-all">ঠিক আছে</button>
             </div>
-         </div>
+         </div>,
+         document.body
       )}
     </div>
   );
