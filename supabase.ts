@@ -16,14 +16,32 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 /**
- * Normalizes phone numbers to the 880XXXXXXXXXX format required by most BD gateways.
+ * Normalizes phone numbers to the 880XXXXXXXXXX format (13 digits).
+ * Most Bangladeshi gateways require the 880 prefix for local delivery.
  */
 const normalizePhone = (phone: string): string => {
   let p = phone.replace(/\D/g, ''); // Remove non-digits
-  if (p.startsWith('880')) return p;
-  if (p.startsWith('88')) p = p.substring(2); // Remove 88 if it doesn't have a 0
-  if (p.startsWith('0')) p = p.substring(1); // Remove leading local 0
-  return `880${p}`;
+  if (p.length === 13 && p.startsWith('880')) return p;
+  
+  // If starts with 880 and longer/shorter, try to fix it
+  if (p.startsWith('880')) {
+    return p.slice(0, 13);
+  }
+
+  // If starts with 01, prepend 88
+  if (p.startsWith('0')) {
+    return `88${p.slice(0, 11)}`;
+  }
+  
+  // If starts with 1 (no leading 0), prepend 880
+  if (p.startsWith('1') && p.length === 10) {
+    return `880${p}`;
+  }
+
+  // Fallback for already correct but stripped formats
+  if (p.length === 10) return `880${p}`;
+
+  return p;
 };
 
 export const smsApi = {
@@ -46,11 +64,11 @@ export const smsApi = {
       if (!data) return defaults;
       
       return {
-        reve_api_key: data.reve_api_key || defaults.reve_api_key,
-        reve_secret_key: data.reve_secret_key || defaults.reve_secret_key,
-        reve_caller_id: data.reve_caller_id || defaults.reve_caller_id,
+        reve_api_key: (data.reve_api_key || defaults.reve_api_key).trim(),
+        reve_secret_key: (data.reve_secret_key || defaults.reve_secret_key).trim(),
+        reve_caller_id: (data.reve_caller_id || defaults.reve_caller_id).trim(),
         bkash_number: data.bkash_number || defaults.bkash_number,
-        reve_client_id: data.reve_client_id || defaults.reve_client_id
+        reve_client_id: (data.reve_client_id || defaults.reve_client_id).trim()
       };
     } catch (e) {
       return { 
@@ -89,14 +107,13 @@ export const smsApi = {
     if (rpcData && rpcData.success === false) throw new Error(rpcData.error || "ট্রানজ্যাকশন সফল হয়নি।");
 
     // 3. Prepare credentials
-    const apiKey = (mData.reve_api_key && mData.reve_api_key.trim() !== '') ? mData.reve_api_key : global.reve_api_key;
-    const secretKey = (mData.reve_secret_key && mData.reve_secret_key.trim() !== '') ? mData.reve_secret_key : global.reve_secret_key;
-    const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id : global.reve_caller_id;
-    const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id : global.reve_client_id;
+    const apiKey = (mData.reve_api_key && mData.reve_api_key.trim() !== '') ? mData.reve_api_key.trim() : global.reve_api_key;
+    const secretKey = (mData.reve_secret_key && mData.reve_secret_key.trim() !== '') ? mData.reve_secret_key.trim() : global.reve_secret_key;
+    const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id.trim() : global.reve_caller_id;
+    const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id.trim() : global.reve_client_id;
 
-    // 4. Batch Processing - Using the "Multi Contact with same content" format from docs
-    // Docs: ...&content=[{"callerID":"...","toUser":"8801811,8801749","messageContent":"..."}]
-    const chunkSize = 50; 
+    // 4. Batch Processing - Use very small chunks (15) to stay well within URL length limits
+    const chunkSize = 15; 
     const batches: string[] = [];
     
     for (let i = 0; i < students.length; i += chunkSize) {
@@ -113,7 +130,8 @@ export const smsApi = {
         messageContent: message
       }];
 
-      // type=3 is mandatory for Unicode/Bengali in REVE SMPP gateway
+      // REVE API expects a JSON string in the 'content' parameter for bulk
+      // type=3 is mandatory for Unicode/Bengali characters
       let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(content))}`;
       
       if (clientId) {
@@ -121,13 +139,15 @@ export const smsApi = {
       }
 
       try {
-        // Mode: 'no-cors' is used as the gateway doesn't provide CORS headers
+        // Mode: 'no-cors' is necessary because these gateways rarely support CORS
+        // We use fetch to fire the request. Even if we can't read the response, the request reaches the server.
         await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
       } catch (err) {
-        console.warn("SMS batch failed to trigger network request:", err);
+        console.warn("SMS batch trigger network error:", err);
       }
     });
 
+    // Execute all batches
     await Promise.all(sendPromises);
     return { success: true };
   },
@@ -147,21 +167,26 @@ export const smsApi = {
         .maybeSingle();
         
       if (data) {
-        if (data.reve_api_key && data.reve_api_key.trim() !== '') apiKey = data.reve_api_key;
-        if (data.reve_secret_key && data.reve_secret_key.trim() !== '') secretKey = data.reve_secret_key;
-        if (data.reve_caller_id && data.reve_caller_id.trim() !== '') callerId = data.reve_caller_id;
-        if (data.reve_client_id && data.reve_client_id.trim() !== '') clientId = data.reve_client_id;
+        if (data.reve_api_key && data.reve_api_key.trim() !== '') apiKey = data.reve_api_key.trim();
+        if (data.reve_secret_key && data.reve_secret_key.trim() !== '') secretKey = data.reve_secret_key.trim();
+        if (data.reve_caller_id && data.reve_caller_id.trim() !== '') callerId = data.reve_caller_id.trim();
+        if (data.reve_client_id && data.reve_client_id.trim() !== '') clientId = data.reve_client_id.trim();
       }
     }
 
     const target = normalizePhone(phone);
     
     // Using /sendtext for single direct messages as per documentation "Submitted API"
+    // Ensured no trailing spaces and strictly defined parameters
     let apiUrl = `https://smpp.revesms.com:7790/sendtext?apikey=${apiKey}&secretkey=${secretKey}&callerID=${callerId}&toUser=${target}&messageContent=${encodeURIComponent(message)}&type=3`;
     
     if (clientId) apiUrl += `&clientid=${clientId}`;
     
-    try { await fetch(apiUrl, { mode: 'no-cors' }); } catch (e) {}
+    try { 
+      await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' }); 
+    } catch (e) {
+      console.warn("Direct SMS trigger error:", e);
+    }
   }
 };
 
