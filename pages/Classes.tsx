@@ -1,16 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, ChevronRight, BookOpen, Users, Edit3, Trash2, X, Check, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Plus, ChevronRight, BookOpen, Users, Edit3, Trash2, X, Check, Loader2, AlertCircle, AlertTriangle, Hash } from 'lucide-react';
 import { supabase, offlineApi } from '../supabase';
 import { Class, Language, Madrasah } from '../types';
 import { t } from '../translations';
 
 export const sortMadrasahClasses = (classes: any[]) => {
   if (!classes || !Array.isArray(classes)) return [];
-  return [...classes].sort((a, b) => 
-    (a.class_name || '').localeCompare((b.class_name || ''), 'bn', { numeric: true })
-  );
+  return [...classes].sort((a, b) => {
+    // Primary sort by sort_order
+    const orderA = a.sort_order ?? 999999;
+    const orderB = b.sort_order ?? 999999;
+    if (orderA !== orderB) return orderA - orderB;
+    // Fallback to alphabetical
+    return (a.class_name || '').localeCompare((b.class_name || ''), 'bn', { numeric: true });
+  });
 };
 
 interface ClassesProps {
@@ -28,6 +33,7 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
   const [showModal, setShowModal] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [newClassName, setNewClassName] = useState('');
+  const [newSortOrder, setNewSortOrder] = useState<string>('');
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Class | null>(null);
 
@@ -64,16 +70,28 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
   const handleSaveClass = async () => {
     if (!newClassName.trim() || !madrasah) return;
     setModalLoading(true);
+    const order = newSortOrder ? parseInt(newSortOrder) : null;
     try {
       if (editingClass) {
         if (navigator.onLine) {
-          const { error } = await supabase.from('classes').update({ class_name: newClassName.trim() }).eq('id', editingClass.id);
+          const { error } = await supabase.from('classes').update({ 
+            class_name: newClassName.trim(),
+            sort_order: order 
+          }).eq('id', editingClass.id);
           if (error) throw error;
         } else {
-          offlineApi.queueAction('classes', 'UPDATE', { id: editingClass.id, class_name: newClassName.trim() });
+          offlineApi.queueAction('classes', 'UPDATE', { 
+            id: editingClass.id, 
+            class_name: newClassName.trim(),
+            sort_order: order
+          });
         }
       } else {
-        const payload = { class_name: newClassName.trim(), madrasah_id: madrasah.id };
+        const payload = { 
+          class_name: newClassName.trim(), 
+          madrasah_id: madrasah.id,
+          sort_order: order
+        };
         if (navigator.onLine) {
           const { error } = await supabase.from('classes').insert(payload);
           if (error) throw error;
@@ -83,6 +101,7 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
       }
       setShowModal(false);
       setNewClassName('');
+      setNewSortOrder('');
       setEditingClass(null);
       triggerRefresh();
     } catch (err: any) {
@@ -111,7 +130,7 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
         <div className="flex items-center justify-between px-2">
           <h1 className="text-xl font-noto font-black text-white drop-shadow-md">{t('classes_title', lang)}</h1>
           {!readOnly && (
-            <button onClick={() => { setNewClassName(''); setEditingClass(null); setShowModal(true); }} className="premium-btn text-white px-5 py-3 rounded-2xl text-[12px] font-black flex items-center gap-2 active:scale-95 transition-all border border-white/20 shadow-xl">
+            <button onClick={() => { setNewClassName(''); setNewSortOrder(''); setEditingClass(null); setShowModal(true); }} className="premium-btn text-white px-5 py-3 rounded-2xl text-[12px] font-black flex items-center gap-2 active:scale-95 transition-all border border-white/20 shadow-xl">
               <Plus size={16} strokeWidth={4} /> {t('new_class', lang)}
             </button>
           )}
@@ -125,7 +144,14 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
                   <BookOpen size={24} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-black text-[#2E0B5E] text-[18px] font-noto truncate leading-tight tracking-tight">{cls.class_name}</h3>
+                  <div className="flex items-center gap-2">
+                    {cls.sort_order !== undefined && cls.sort_order !== null && (
+                      <span className="text-[10px] font-black bg-[#8D30F4] text-white px-2 py-0.5 rounded-md">
+                        #{cls.sort_order}
+                      </span>
+                    )}
+                    <h3 className="font-black text-[#2E0B5E] text-[18px] font-noto truncate leading-tight tracking-tight">{cls.class_name}</h3>
+                  </div>
                   <div className="flex items-center gap-1.5 mt-1">
                     <Users size={12} className="text-[#8D30F4]/60" />
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">{cls.student_count || 0} {t('students_count', lang)}</p>
@@ -135,7 +161,7 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
               <div className="flex items-center gap-2 ml-3">
                 {!readOnly && (
                   <>
-                    <button onClick={(e) => { e.stopPropagation(); setNewClassName(cls.class_name); setEditingClass(cls); setShowModal(true); }} 
+                    <button onClick={(e) => { e.stopPropagation(); setNewClassName(cls.class_name); setNewSortOrder(cls.sort_order?.toString() || ''); setEditingClass(cls); setShowModal(true); }} 
                       className="w-10 h-10 bg-[#F2EBFF] text-[#8D30F4] rounded-xl flex items-center justify-center border border-[#8D30F4]/10 active:scale-90 transition-all shadow-sm">
                       <Edit3 size={16} />
                     </button>
@@ -181,6 +207,20 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
                   placeholder="যেমন: হিফয বিভাগ"
                 />
               </div>
+
+              <div className="space-y-2.5">
+                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">
+                  <Hash size={12} /> সিরিয়াল নম্বর (Sorting)
+                </label>
+                <input 
+                  type="number" 
+                  className="w-full px-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-[1.8rem] text-[#2E0B5E] font-black text-lg outline-none focus:border-[#8D30F4]/30 focus:bg-white transition-all shadow-inner" 
+                  value={newSortOrder} 
+                  onChange={(e) => setNewSortOrder(e.target.value)}
+                  placeholder="যেমন: ১"
+                />
+              </div>
+
               <button onClick={handleSaveClass} disabled={modalLoading || !newClassName.trim()} className="w-full py-5 premium-btn text-white font-black rounded-full shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 text-lg">
                 {modalLoading ? <Loader2 className="animate-spin" size={24} /> : <><Check size={24} strokeWidth={4} /> {t('save', lang)}</>}
               </button>

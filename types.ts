@@ -27,6 +27,7 @@ export interface Class {
   id: string;
   madrasah_id: string;
   class_name: string;
+  sort_order?: number | null;
   created_at?: string;
 }
 
