@@ -245,9 +245,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     
     setApprovingIds(prev => new Set(prev).add(tr.id));
     try {
-      // FIX: Removed manual update call to 'transactions' which was causing schema cache error
-      // The RPC function should handle updating the transaction status and sms_count internally.
-      const { error } = await supabase.rpc('approve_payment_with_sms', { 
+      // ১. ডাটাবেসে পেমেন্ট অনুমোদন করা
+      const { data, error } = await supabase.rpc('approve_payment_with_sms', { 
         t_id: tr.id, 
         m_id: tr.madrasah_id, 
         sms_to_give: sms 
@@ -255,7 +254,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       
       if (error) throw error;
       
-      setStatusModal({ show: true, type: 'success', title: 'সফল', message: 'রিচার্জ সফল হয়েছে' });
+      // ২. ইউজারকে কনফার্মেশন SMS পাঠানো (যদি ফোন নম্বর থাকে)
+      const userPhone = tr.madrasahs?.phone || tr.sender_phone;
+      if (userPhone) {
+        const msg = `আস-সালামু আলাইকুম, আপনার পেমেন্ট অনুমোদিত হয়েছে। আপনার অ্যাকাউন্টে ${sms} টি SMS যোগ করা হয়েছে। ধন্যবাদ।`;
+        // সিসটেম ডিফল্ট কী ব্যবহার করে পাঠানোর জন্য madrasahId পাস করা হয়নি
+        await smsApi.sendDirect(userPhone, msg);
+      }
+
+      setStatusModal({ show: true, type: 'success', title: 'সফল', message: 'রিচার্জ সফল হয়েছে এবং ইউজারকে SMS পাঠানো হয়েছে।' });
       initData();
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
@@ -274,6 +281,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     try {
       const { error } = await supabase.from('transactions').update({ status: 'rejected' }).eq('id', rejectConfirm.id);
       if (error) throw error;
+      
+      // ইউজারকে রিজেক্ট হওয়ার SMS পাঠানো (ঐচ্ছিক)
+      const userPhone = rejectConfirm.madrasahs?.phone || rejectConfirm.sender_phone;
+      if (userPhone) {
+        const msg = `দুঃখিত, আপনার পেমেন্ট রিকোয়েস্টটি (${rejectConfirm.amount} ৳) বাতিল করা হয়েছে। বিস্তারিত জানতে যোগাযোগ করুন।`;
+        await smsApi.sendDirect(userPhone, msg);
+      }
+
       setRejectConfirm(null);
       setStatusModal({ show: true, type: 'success', title: 'বাতিল', message: 'পেমেন্ট রিকোয়েস্ট বাতিল করা হয়েছে' });
       initData();
