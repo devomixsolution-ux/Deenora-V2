@@ -29,6 +29,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   );
   const [smsToCredit, setSmsToCredit] = useState<{ [key: string]: string }>({});
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
+  
+  // New state for SMS toggle (defaults to true)
+  const [smsEnabledMap, setSmsEnabledMap] = useState<{ [key: string]: boolean }>({});
 
   const [statusModal, setStatusModal] = useState<{show: boolean, type: 'success' | 'error', title: string, message: string}>({
     show: false,
@@ -156,6 +159,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
         if (isMounted) {
           setPendingTrans(pTrans);
           setTransactionHistory(tHist);
+          // Initialize SMS toggle for each pending trans if not already set
+          const newSmsMap = { ...smsEnabledMap };
+          pTrans.forEach(tr => {
+            if (newSmsMap[tr.id] === undefined) newSmsMap[tr.id] = true;
+          });
+          setSmsEnabledMap(newSmsMap);
         }
       }
     } catch (err) { 
@@ -245,7 +254,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     
     setApprovingIds(prev => new Set(prev).add(tr.id));
     try {
-      // ১. ডাটাবেসে পেমেন্ট অনুমোদন করা
+      // ১. ডাটাবেসে পেমেন্ট অনুমোদন করা (RPC handles transactions, madrasahs balance and admin stock)
       const { data, error } = await supabase.rpc('approve_payment_with_sms', { 
         t_id: tr.id, 
         m_id: tr.madrasah_id, 
@@ -254,15 +263,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       
       if (error) throw error;
       
-      // ২. ইউজারকে কনফার্মেশন SMS পাঠানো (যদি ফোন নম্বর থাকে)
-      const userPhone = tr.madrasahs?.phone || tr.sender_phone;
-      if (userPhone) {
-        const msg = `আস-সালামু আলাইকুম, আপনার পেমেন্ট অনুমোদিত হয়েছে। আপনার অ্যাকাউন্টে ${sms} টি SMS যোগ করা হয়েছে। ধন্যবাদ।`;
-        // সিসটেম ডিফল্ট কী ব্যবহার করে পাঠানোর জন্য madrasahId পাস করা হয়নি
-        await smsApi.sendDirect(userPhone, msg);
+      // ২. ইউজারকে কনফার্মেশন SMS পাঠানো (যদি টগল চালু থাকে)
+      const isSmsEnabled = smsEnabledMap[tr.id] !== false;
+      if (isSmsEnabled) {
+        const userPhone = tr.madrasahs?.phone || tr.sender_phone;
+        if (userPhone) {
+          const msg = `আস-সালামু আলাইকুম, আপনার পেমেন্ট অনুমোদিত হয়েছে। আপনার অ্যাকাউন্টে ${sms} টি SMS যোগ করা হয়েছে। ধন্যবাদ।`;
+          await smsApi.sendDirect(userPhone, msg);
+        }
       }
 
-      setStatusModal({ show: true, type: 'success', title: 'সফল', message: 'রিচার্জ সফল হয়েছে এবং ইউজারকে SMS পাঠানো হয়েছে।' });
+      setStatusModal({ 
+        show: true, 
+        type: 'success', 
+        title: 'সফল', 
+        message: isSmsEnabled ? 'রিচার্জ সফল হয়েছে এবং ইউজারকে SMS পাঠানো হয়েছে।' : 'রিচার্জ সফল হয়েছে (SMS পাঠানো হয়নি)।' 
+      });
+      
+      // Refresh data immediately to reflect in history
       initData();
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
@@ -282,7 +300,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       const { error } = await supabase.from('transactions').update({ status: 'rejected' }).eq('id', rejectConfirm.id);
       if (error) throw error;
       
-      // ইউজারকে রিজেক্ট হওয়ার SMS পাঠানো (ঐচ্ছিক)
+      // ইউজারকে রিজেক্ট হওয়ার SMS পাঠানো (টগল চেক করা যেতে পারে, তবে ডিফল্ট হিসেবে পাঠানো হচ্ছে)
       const userPhone = rejectConfirm.madrasahs?.phone || rejectConfirm.sender_phone;
       if (userPhone) {
         const msg = `দুঃখিত, আপনার পেমেন্ট রিকোয়েস্টটি (${rejectConfirm.amount} ৳) বাতিল করা হয়েছে। বিস্তারিত জানতে যোগাযোগ করুন।`;
@@ -297,6 +315,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     } finally {
       setIsRejecting(false);
     }
+  };
+
+  const toggleSmsForRequest = (id: string) => {
+    setSmsEnabledMap(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const filtered = useMemo(() => madrasahs.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase())), [madrasahs, searchQuery]);
@@ -471,6 +493,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                            </p>
                         </div>
                       </div>
+                      
+                      {/* SMS Toggle UI */}
+                      <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                        <div className="flex items-center gap-2">
+                           <MessageSquare size={16} className={smsEnabledMap[tr.id] ? "text-[#8D30F4]" : "text-slate-300"} />
+                           <span className="text-[10px] font-black text-slate-500 uppercase">অ্যাপ্রুভ হলে SMS পাঠান</span>
+                        </div>
+                        <button onClick={() => toggleSmsForRequest(tr.id)} className="transition-all active:scale-90">
+                           {smsEnabledMap[tr.id] ? (
+                             <ToggleRight className="text-[#8D30F4]" size={28} />
+                           ) : (
+                             <ToggleLeft className="text-slate-300" size={28} />
+                           )}
+                        </button>
+                      </div>
+
                       <div className="flex flex-col gap-3">
                         <div className="flex flex-col gap-2.5">
                           <input 
@@ -521,8 +559,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                              </span>
                           </div>
                           <p className="text-[12px] font-black text-[#2E0B5E] font-noto truncate">{tr.madrasahs?.name}</p>
-                          <p className="text-[9px] font-bold text-slate-400 mt-1 flex items-center gap-1">
+                          <p className="text-[10px] font-bold text-slate-400 mt-1 flex items-center gap-2">
                              <Smartphone size={10} /> বিকাশ: {tr.sender_phone || 'N/A'}
+                             {tr.sms_count && <span className="text-[#8D30F4] font-black">({tr.sms_count} SMS)</span>}
                           </p>
                           <div className="flex items-center gap-2 mt-1.5 text-slate-400">
                              <Clock size={10} />
