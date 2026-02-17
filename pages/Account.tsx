@@ -245,7 +245,25 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                        <div className="space-y-1"><label className="text-[9px] font-black text-white/60 uppercase px-1">Master Payment Number</label><input type="text" className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 font-black text-white text-sm outline-none focus:border-[#8D30F4]/50" value={globalSettings.bkash_number} onChange={(e) => setGlobalSettings({...globalSettings, bkash_number: e.target.value})} /></div>
                     </div>
                  </div>
-                 <div className="pt-2"><button onClick={handleSaveGlobalSettings} disabled={saving} className="w-full h-13 bg-gradient-to-r from-[#8D30F4] to-[#A179FF] text-white font-black rounded-full shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/20 text-xs uppercase tracking-widest">{saving ? <Loader2 className="animate-spin" size={18} /> : <><RefreshCw size={16} /> Push Changes</>}</button></div>
+                 <div className="pt-2">
+                    <button 
+                       onClick={handleSaveGlobalSettings} 
+                       disabled={saving} 
+                       className="relative w-full h-16 group overflow-hidden bg-[#8D30F4] text-white font-black rounded-full shadow-[0_0_30px_rgba(141,48,244,0.4)] active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/20 text-[13px] uppercase tracking-[0.25em]"
+                    >
+                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite_linear]"></div>
+                       {saving ? (
+                          <Loader2 className="animate-spin" size={22} />
+                       ) : (
+                          <>
+                             <div className="bg-white/20 p-2 rounded-xl">
+                                <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-700" />
+                             </div>
+                             <span className="drop-shadow-md">Push Changes</span>
+                          </>
+                       )}
+                    </button>
+                 </div>
               </div>
            </div>
         </div>,
@@ -292,6 +310,13 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>,
         document.body
       )}
+
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+      `}</style>
     </div>
   );
 };
