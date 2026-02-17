@@ -20,7 +20,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const [madrasahs, setMadrasahs] = useState<MadrasahWithStats[]>([]);
   const [pendingTrans, setPendingTrans] = useState<Transaction[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
-  const [selectedUserHistory, setSelectedUserHistory] = useState<any[]>([]);
   const [globalRecentCalls, setGlobalRecentCalls] = useState<any[]>([]);
   const [adminStock, setAdminStock] = useState<AdminSMSStock | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +104,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       .from('recent_calls')
       .select('*, students(student_name), madrasahs(name)')
       .order('called_at', { ascending: false })
-      .limit(20);
+      .limit(20); // Strict limit to 20
     return data || [];
   };
 
@@ -145,7 +144,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
           }));
           setGlobalStats(gStats);
           setAdminStock(aStock);
-          setGlobalRecentCalls(gCalls);
+          setGlobalRecentCalls(gCalls.slice(0, 20)); // Ensure only top 20
         }
       }
       if (view === 'approvals') {
@@ -180,11 +179,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
   const fetchDynamicStats = async (madrasahId: string) => {
     setIsRefreshingStats(true);
     try {
-      const [studentsRes, classesRes, teachersRes, recentCallsRes] = await Promise.all([
+      const [studentsRes, classesRes, teachersRes] = await Promise.all([
         supabase.from('students').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
         supabase.from('classes').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
-        supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId),
-        supabase.from('recent_calls').select('*, students(student_name)').eq('madrasah_id', madrasahId).order('called_at', { ascending: false }).limit(20)
+        supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('madrasah_id', madrasahId)
       ]);
       const stats = {
         students: studentsRes.count || 0,
@@ -193,7 +191,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       };
       setUserStats(stats);
       setMadrasahs(prev => prev.map(m => m.id === madrasahId ? { ...m, student_count: stats.students, class_count: stats.classes } : m));
-      if (recentCallsRes.data) setSelectedUserHistory(recentCallsRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -348,22 +345,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-[#F2EBFF]/50 p-6 rounded-[2.5rem] border border-white/50 shadow-lg flex flex-col items-center">
-                   <Users size={20} className="text-[#8D30F4] mb-2" />
-                  <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">Students</span>
-                  <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalStudents}</h4>
-                </div>
-                <div className="bg-[#F2EBFF]/50 p-6 rounded-[2.5rem] border border-white/50 shadow-lg flex flex-col items-center">
-                   <Layers size={20} className="text-[#8D30F4] mb-2" />
-                  <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">Classes</span>
-                  <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalClasses}</h4>
-                </div>
-                <div className="bg-[#F2EBFF]/50 p-6 rounded-[2.5rem] border border-white/50 shadow-lg flex flex-col items-center">
-                   <GraduationCap size={20} className="text-[#8D30F4] mb-2" />
-                  <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">Teachers</span>
-                  <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalTeachers}</h4>
-                </div>
+              {/* Added Global Recent Activity Section to Dashboard */}
+              <div className="bg-white/95 p-6 rounded-[2.5rem] border border-white shadow-xl space-y-4">
+                  <h4 className="text-[11px] font-black text-[#2E0B5E] uppercase tracking-widest px-1 flex items-center gap-2">
+                     <Activity size={14} className="text-[#8D30F4]" /> Recent System Activity (Top 20)
+                  </h4>
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                     {globalRecentCalls.length > 0 ? globalRecentCalls.slice(0, 20).map(call => (
+                        <div key={call.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
+                           <div className="min-w-0 flex-1">
+                              <p className="text-[10px] font-black text-[#8D30F4] uppercase tracking-tighter truncate">{call.madrasahs?.name}</p>
+                              <p className="text-sm font-black text-[#2E0B5E] font-noto truncate">{call.students?.student_name}</p>
+                           </div>
+                           <div className="text-right shrink-0 ml-4 opacity-60">
+                              <p className="text-[9px] font-bold text-slate-400">{new Date(call.called_at).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</p>
+                           </div>
+                        </div>
+                     )) : (
+                        <p className="text-center py-4 text-slate-300 text-[10px] font-black uppercase">No recent calls</p>
+                     )}
+                  </div>
               </div>
             </div>
           )}
@@ -460,7 +461,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       </div>
                     </div>
                   )) : (
-                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/20">
+                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/30">
                       <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No Pending Requests</p>
                     </div>
                   )}
@@ -496,7 +497,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                        </div>
                     </div>
                   )) : (
-                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/20">
+                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/30">
                        <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No History Found</p>
                     </div>
                   )}
@@ -544,27 +545,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                       <div className="bg-[#F2EBFF] p-4 rounded-3xl text-center border border-[#8D30F4]/10">
                          <h5 className="text-xl font-black text-[#8D30F4]">{selectedUser.sms_balance || 0}</h5>
                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">SMS Bal</p>
-                      </div>
-                   </div>
-
-                   <div className="space-y-4 pt-4 border-t border-slate-50">
-                      <h4 className="text-[11px] font-black text-[#2E0B5E] uppercase tracking-widest px-1 flex items-center gap-2">
-                        <HistoryIcon size={14} className="text-[#8D30F4]" /> কল হিস্ট্রি (সর্বশেষ ২০টি)
-                      </h4>
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                        {selectedUserHistory.length > 0 ? selectedUserHistory.map(call => (
-                          <div key={call.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
-                            <div className="min-w-0">
-                               <p className="text-sm font-black text-[#2E0B5E] font-noto truncate">{call.students?.student_name || 'N/A'}</p>
-                            </div>
-                            <div className="text-right shrink-0 ml-4">
-                               <p className="text-[10px] font-black text-[#8D30F4]">{new Date(call.called_at).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</p>
-                               <p className="text-[8px] font-bold text-slate-400">{new Date(call.called_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' })}</p>
-                            </div>
-                          </div>
-                        )) : (
-                          <div className="text-center py-6 text-slate-300 text-[10px] font-black uppercase">No Calls Found</div>
-                        )}
                       </div>
                    </div>
 

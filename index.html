@@ -96,22 +96,21 @@
         height: 100%;
       }
 
-      /* Fixed Modal Overlay - Strictly covering everything */
+      /* Ultimate Modal Overlay - Portaled Fix */
       .modal-overlay {
         position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
+        inset: 0 !important; /* Shorthand for top:0, left:0, bottom:0, right:0 */
+        width: 100vw !important;
         height: 100dvh !important;
-        z-index: 10000 !important;
+        z-index: 99999 !important;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 !important;
         padding: 20px;
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        background-color: rgba(8, 10, 18, 0.4) !important;
       }
     </style>
   <script type="importmap">

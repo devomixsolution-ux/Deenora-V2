@@ -34,8 +34,9 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
     }
     
     const cached = offlineApi.getCache('recent_calls');
+    // Ensure cached data is also sliced to 20
     if (cached && !isManual) {
-      setRecentCalls(cached);
+      setRecentCalls(cached.slice(0, 20));
       setLoadingRecent(false);
     }
 
@@ -62,7 +63,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
           `)
           .eq('madrasah_id', madrasahId)
           .order('called_at', { ascending: false })
-          .limit(20);
+          .limit(20); // Strict DB limit
         
         if (error) throw error;
         
@@ -82,7 +83,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
             return { ...call, students: undefined };
           });
 
-          const validCalls = formattedCalls.filter(call => call.students);
+          const validCalls = formattedCalls.filter(call => call.students).slice(0, 20);
           setRecentCalls(validCalls);
           offlineApi.setCache('recent_calls', validCalls);
         }
@@ -214,7 +215,9 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
 
       <div className="space-y-3.5 px-1">
         <div className="flex items-center justify-between px-3">
-          <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em] drop-shadow-md opacity-80">{t('recent_calls', lang)}</h2>
+          <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em] drop-shadow-md opacity-80">
+            {t('recent_calls', lang)} <span className="text-[9px] opacity-40 ml-1">(Top 20)</span>
+          </h2>
           <button 
             onClick={() => fetchRecentCalls(true)} 
             className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md active:scale-95 transition-all flex items-center gap-2 px-3"
@@ -239,7 +242,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
           </div>
         ) : recentCalls.length > 0 ? (
           <div className="space-y-2.5">
-            {recentCalls.map(call => (
+            {recentCalls.slice(0, 20).map(call => (
               <div key={call.id} onClick={() => call.students && onStudentClick(call.students)} className="bg-white/95 p-4 rounded-[1.8rem] border border-white/40 flex items-center justify-between shadow-xl active:scale-[0.98] transition-all group backdrop-blur-lg">
                 <div className="flex items-center gap-4 min-w-0 flex-1">
                   <div className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 border border-slate-100 shadow-inner shrink-0">
