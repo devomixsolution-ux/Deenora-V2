@@ -105,7 +105,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       .from('recent_calls')
       .select('*, students(student_name), madrasahs(name)')
       .order('called_at', { ascending: false })
-      .limit(20); // Strict limit to 20
+      .limit(20);
     return data || [];
   };
 
@@ -145,7 +145,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
           }));
           setGlobalStats(gStats);
           setAdminStock(aStock);
-          setGlobalRecentCalls(gCalls.slice(0, 20)); // Ensure only top 20
+          setGlobalRecentCalls(gCalls.slice(0, 20));
         }
       }
       if (view === 'approvals') {
@@ -245,14 +245,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     
     setApprovingIds(prev => new Set(prev).add(tr.id));
     try {
-      const { error: updateErr } = await supabase.from('transactions').update({ sms_count: sms }).eq('id', tr.id);
-      if (updateErr) throw updateErr;
+      // FIX: Removed manual update call to 'transactions' which was causing schema cache error
+      // The RPC function should handle updating the transaction status and sms_count internally.
       const { error } = await supabase.rpc('approve_payment_with_sms', { 
         t_id: tr.id, 
         m_id: tr.madrasah_id, 
         sms_to_give: sms 
       });
+      
       if (error) throw error;
+      
       setStatusModal({ show: true, type: 'success', title: 'সফল', message: 'রিচার্জ সফল হয়েছে' });
       initData();
     } catch (err: any) {
@@ -354,7 +356,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                 </div>
               </div>
 
-              {/* Added Global Recent Activity Section to Dashboard */}
               <div className="bg-white/95 p-6 rounded-[2.5rem] border border-white shadow-xl space-y-4">
                   <h4 className="text-[11px] font-black text-[#2E0B5E] uppercase tracking-widest px-1 flex items-center gap-2">
                      <Activity size={14} className="text-[#8D30F4]" /> Recent System Activity (Top 20)
@@ -456,7 +457,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                         </div>
                       </div>
                       <div className="flex flex-col gap-3">
-                        {/* Improved action area with vertical stack to prevent overflow */}
                         <div className="flex flex-col gap-2.5">
                           <input 
                             type="number" 
@@ -656,7 +656,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
              </div>
              <h3 className="text-[22px] font-black text-[#2E0B5E] font-noto leading-tight tracking-tight">{statusModal.title}</h3>
              <p className="text-[13px] font-bold text-slate-400 mt-3 font-noto px-4 leading-relaxed">{statusModal.message}</p>
-             <button onClick={() => setStatusModal({ ...statusModal, show: false })} className={`w-full mt-8 py-4 font-black rounded-full text-xs uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-500 text-white shadow-red-100'}`}>
+             <button onClick={() => setStatusModal({ ...statusModal, show: false })} className={`w-full mt-8 py-4 font-black rounded-full text-xs uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${statusModal.type === 'success' ? 'bg-[#2E0B5E] text-white shadow-slate-200' : 'bg-red-50 text-white shadow-red-100'}`}>
                 {lang === 'bn' ? 'ঠিক আছে' : 'Continue'}
              </button>
           </div>
