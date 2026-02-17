@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, ShieldCheck, User as UserIcon, Loader2, Save, X, Phone, Key, CheckCircle2, Trash2, Edit3, Smartphone, MessageSquare, Layers, MessageCircle, Shield, Check, ChevronRight, AlertTriangle } from 'lucide-react';
 import { supabase } from '../supabase';
 import { Teacher, Language, Madrasah } from '../types';
+import { t } from '../translations';
 
 interface TeachersProps {
   lang: Language;
@@ -46,24 +47,61 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
     if (!madrasah || !name || !phone || !code) return;
     setSaving(true);
     try {
+      // Clean inputs
+      const cleanPhone = phone.replace(/\D/g, '');
+      const cleanCode = code.trim();
+
+      // Check for duplicates in the current madrasah
+      let query = supabase
+        .from('teachers')
+        .select('id, phone, login_code')
+        .eq('madrasah_id', madrasah.id)
+        .or(`phone.eq.${cleanPhone},login_code.eq.${cleanCode}`);
+      
+      if (editId) {
+        query = query.neq('id', editId);
+      }
+
+      const { data: duplicates, error: checkError } = await query;
+      
+      if (checkError) throw checkError;
+
+      if (duplicates && duplicates.length > 0) {
+        const hasPhoneMatch = duplicates.some(d => d.phone === cleanPhone);
+        const hasCodeMatch = duplicates.some(d => d.login_code === cleanCode);
+
+        if (hasPhoneMatch) {
+          throw new Error(t('duplicate_teacher_phone', lang));
+        }
+        if (hasCodeMatch) {
+          throw new Error(t('duplicate_teacher_pin', lang));
+        }
+      }
+
       const payload = {
         madrasah_id: madrasah.id,
-        name,
-        phone,
-        login_code: code,
+        name: name.trim(),
+        phone: cleanPhone,
+        login_code: cleanCode,
         permissions: perms
       };
 
       if (editId) {
-        await supabase.from('teachers').update(payload).eq('id', editId);
+        const { error } = await supabase.from('teachers').update(payload).eq('id', editId);
+        if (error) throw error;
       } else {
-        await supabase.from('teachers').insert(payload);
+        const { error } = await supabase.from('teachers').insert(payload);
+        if (error) throw error;
       }
       
       setIsModalOpen(false);
       resetForm();
       fetchTeachers();
-    } catch (e: any) { alert(e.message); } finally { setSaving(false); }
+    } catch (e: any) { 
+      alert(e.message); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const resetForm = () => {
@@ -302,7 +340,7 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
       {/* Teacher Deletion Modal - Better Design */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[1000] flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-500">
              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
                 <AlertTriangle size={40} />
              </div>

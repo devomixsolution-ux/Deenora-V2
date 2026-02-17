@@ -111,7 +111,7 @@ export const translations = {
     students: 'ছাত্রছাত্রী',
     teachers: 'শিক্ষক',
     copied: 'কপি হয়েছে!',
-    app_settings: 'অ্যাপ সেটিংস',
+    app_settings: 'アプリ設定',
     phone_primary_wa: 'প্রাথমিক ও হোয়াটসঅ্যাপ (১৫ডি)',
     phone_secondary_15: '২য় ফোন নম্বর (১৫ডি)',
     system_sms: 'সিস্টেম এসএমএস',
@@ -128,7 +128,9 @@ export const translations = {
     logout_system: 'সিস্টেম থেকে বের হন',
     cancel_btn: 'বাতিল করুন',
     confirm_btn: 'নিশ্চিত করুন',
-    sender_id: 'সেন্ডার আইডি'
+    sender_id: 'সেন্ডার আইডি',
+    duplicate_teacher_phone: 'এই মোবাইল নম্বরটি অন্য একজন শিক্ষকের অ্যাকাউন্টে ব্যবহৃত হয়েছে!',
+    duplicate_teacher_pin: 'এই পিন কোডটি অন্য একজন শিক্ষকের অ্যাকাউন্টে ব্যবহৃত হয়েছে!'
   },
   en: {
     home: 'Home',
@@ -256,7 +258,9 @@ export const translations = {
     logout_system: 'Logout of System',
     cancel_btn: 'Cancel',
     confirm_btn: 'Confirm',
-    sender_id: 'Sender ID'
+    sender_id: 'Sender ID',
+    duplicate_teacher_phone: 'This phone number is already used by another teacher!',
+    duplicate_teacher_pin: 'This PIN code is already used by another teacher!'
   }
 };
 
