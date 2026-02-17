@@ -40,7 +40,7 @@ export const translations = {
     madrasah_name: 'মাদরাসার নাম',
     madrasah_phone: 'মাদরাসার মোবাইল নম্বর',
     language: 'ভাষা (Language)',
-    version: 'ভার্সন ২.৫.০',
+    version: 'ভার্সন ২.৫.১',
     copyright: '© ২০২৫ Deenora মাদরাসা ম্যানেজমেন্ট',
     saving: 'সংরক্ষণ হচ্ছে...',
     success: 'সফলভাবে সংরক্ষিত',
@@ -111,7 +111,7 @@ export const translations = {
     students: 'ছাত্রছাত্রী',
     teachers: 'শিক্ষক',
     copied: 'কপি হয়েছে!',
-    app_settings: 'アプリ設定',
+    app_settings: 'অ্যাপ সেটিংস',
     phone_primary_wa: 'প্রাথমিক ও হোয়াটসঅ্যাপ (১৫ডি)',
     phone_secondary_15: '২য় ফোন নম্বর (১৫ডি)',
     system_sms: 'সিস্টেম এসএমএস',
@@ -130,7 +130,10 @@ export const translations = {
     confirm_btn: 'নিশ্চিত করুন',
     sender_id: 'সেন্ডার আইডি',
     duplicate_teacher_phone: 'এই মোবাইল নম্বরটি অন্য একজন শিক্ষকের অ্যাকাউন্টে ব্যবহৃত হয়েছে!',
-    duplicate_teacher_pin: 'এই পিন কোডটি অন্য একজন শিক্ষকের অ্যাকাউন্টে ব্যবহৃত হয়েছে!'
+    duplicate_teacher_pin: 'এই পিন কোডটি অন্য একজন শিক্ষকের অ্যাকাউন্টে ব্যবহৃত হয়েছে!',
+    notifications: 'নোটিফিকেশন',
+    no_notifications: 'কোনো নোটিফিকেশন নেই',
+    system_update: 'সিস্টেম আপডেট'
   },
   en: {
     home: 'Home',
@@ -170,7 +173,7 @@ export const translations = {
     madrasah_name: 'Madrasah Name',
     madrasah_phone: 'Madrasah Phone',
     language: 'Language',
-    version: 'Version 2.5.0',
+    version: 'Version 2.5.1',
     copyright: '© 2025 Deenora Madrasah Management',
     saving: 'Saving...',
     success: 'Successfully Saved',
@@ -260,7 +263,10 @@ export const translations = {
     confirm_btn: 'Confirm',
     sender_id: 'Sender ID',
     duplicate_teacher_phone: 'This phone number is already used by another teacher!',
-    duplicate_teacher_pin: 'This PIN code is already used by another teacher!'
+    duplicate_teacher_pin: 'This PIN code is already used by another teacher!',
+    notifications: 'Notifications',
+    no_notifications: 'No notifications',
+    system_update: 'System Update'
   }
 };
 

@@ -1,11 +1,10 @@
 
-import React from 'react';
-import { Home, User, BookOpen, Wallet, ShieldCheck, BarChart3, CreditCard, RefreshCw, Smartphone } from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, User, BookOpen, Wallet, ShieldCheck, BarChart3, CreditCard, RefreshCw, Smartphone, Bell, X, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { View, Language, Madrasah, Teacher } from '../types';
 import { t } from '../translations';
 
 interface LayoutProps {
-  // Use React.ReactNode instead of React.Node for children type
   children: React.ReactNode;
   currentView: View;
   setView: (view: View) => void;
@@ -16,6 +15,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, madrasah, onUpdateClick, teacher }) => {
+  const [showNotifications, setShowNotifications] = useState(false);
   const isSuperAdmin = madrasah?.is_super_admin === true;
 
   const isTabActive = (tab: string) => {
@@ -33,9 +33,26 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
   const canSeeClasses = !teacher || (teacher.permissions?.can_manage_students || teacher.permissions?.can_manage_classes);
   const canSeeWallet = !teacher || teacher.permissions?.can_send_sms;
 
+  const mockNotifications = [
+    {
+      id: 1,
+      title: lang === 'bn' ? 'সিস্টেম আপডেট ২.৫.১' : 'System Update 2.5.1',
+      desc: lang === 'bn' ? 'শিক্ষক পোর্টাল এবং ব্যাকআপ টুলস অপ্টিমাইজ করা হয়েছে।' : 'Teacher portal and backup tools have been optimized.',
+      type: 'info',
+      time: '2h ago'
+    },
+    {
+      id: 2,
+      title: lang === 'bn' ? 'রিচার্জ অফার!' : 'Recharge Offer!',
+      desc: lang === 'bn' ? '১০০০ এসএমএস রিচার্জে ৫০টি এসএমএস বোনাস।' : 'Get 50 bonus SMS on 1000 SMS recharge.',
+      type: 'success',
+      time: '1d ago'
+    }
+  ];
+
   return (
     <div className="flex flex-col w-full h-full relative bg-transparent overflow-hidden">
-      {/* Header with lower priority stack */}
+      {/* Header */}
       <header className="flex-none px-6 pt-[calc(env(safe-area-inset-top)+8px)] pb-3 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <div className="w-11 h-11 rounded-full flex items-center justify-center bg-white shadow-sm border border-white/20 shrink-0 overflow-hidden">
@@ -57,9 +74,20 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
           </div>
         </div>
         
-        <button onClick={() => window.location.reload()} className="p-2.5 bg-white/20 backdrop-blur-md rounded-[1rem] text-white active:scale-95 transition-all border border-white/20 shadow-xl ml-3">
-          <RefreshCw size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Notification Bell */}
+          <button 
+            onClick={() => setShowNotifications(true)}
+            className="relative p-2.5 bg-white/20 backdrop-blur-md rounded-[1rem] text-white active:scale-95 transition-all border border-white/20 shadow-xl"
+          >
+            <Bell size={18} />
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#9D50FF] animate-pulse"></span>
+          </button>
+
+          <button onClick={() => window.location.reload()} className="p-2.5 bg-white/20 backdrop-blur-md rounded-[1rem] text-white active:scale-95 transition-all border border-white/20 shadow-xl">
+            <RefreshCw size={18} />
+          </button>
+        </div>
       </header>
 
       {/* Main Scrollable Content */}
@@ -67,7 +95,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
         {children}
       </main>
 
-      {/* Navigation - High z-index to stay on top of content */}
+      {/* Navigation */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-sm z-[200]">
         <nav className="bg-white/95 backdrop-blur-[25px] border border-white/50 flex justify-around items-center py-3 px-2 rounded-[2.5rem] shadow-[0_20px_50px_-10px_rgba(46,11,94,0.3)]">
           <button onClick={() => setView('home')} className={`relative flex flex-col items-center gap-0.5 transition-all flex-1 ${isTabActive('home') ? 'text-[#8D30F4]' : 'text-[#A179FF]'}`}>
@@ -115,6 +143,59 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
           </button>
         </nav>
       </div>
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div className="fixed inset-0 bg-[#080A12]/60 backdrop-blur-xl z-[9999] flex items-start justify-center p-4 pt-12 animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl animate-in zoom-in-95 duration-500 border border-slate-100 overflow-hidden flex flex-col max-h-[80vh]">
+              <div className="p-6 border-b border-slate-50 flex items-center justify-between shrink-0">
+                 <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#F2EBFF] text-[#8D30F4] rounded-xl flex items-center justify-center">
+                       <Bell size={20} strokeWidth={2.5} />
+                    </div>
+                    <h3 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">{t('notifications', lang)}</h3>
+                 </div>
+                 <button onClick={() => setShowNotifications(false)} className="w-9 h-9 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center active:scale-90 transition-all">
+                    <X size={18} strokeWidth={3} />
+                 </button>
+              </div>
+              
+              <div className="p-4 space-y-3 overflow-y-auto custom-scrollbar flex-1">
+                 {mockNotifications.map(n => (
+                    <div key={n.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 relative group active:scale-[0.98] transition-all">
+                       <div className="flex gap-4">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${n.type === 'success' ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'}`}>
+                             {n.type === 'success' ? <CheckCircle2 size={18} /> : <Info size={18} />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                             <div className="flex items-center justify-between gap-2 mb-1">
+                                <h4 className="text-[13px] font-black text-[#2E0B5E] font-noto truncate">{n.title}</h4>
+                                <span className="text-[8px] font-black text-slate-400 uppercase shrink-0">{n.time}</span>
+                             </div>
+                             <p className="text-[11px] font-bold text-slate-500 leading-relaxed font-noto">{n.desc}</p>
+                          </div>
+                       </div>
+                    </div>
+                 ))}
+                 {mockNotifications.length === 0 && (
+                   <div className="py-12 text-center">
+                      <Bell size={40} className="mx-auto text-slate-200 mb-4" />
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('no_notifications', lang)}</p>
+                   </div>
+                 )}
+              </div>
+
+              <div className="p-4 border-t border-slate-50 bg-slate-50/50">
+                 <button 
+                  onClick={() => setShowNotifications(false)} 
+                  className="w-full py-3.5 bg-white border border-slate-200 text-[#2E0B5E] font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-sm active:scale-95 transition-all"
+                 >
+                   {lang === 'bn' ? 'বন্ধ করুন' : 'Close'}
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
