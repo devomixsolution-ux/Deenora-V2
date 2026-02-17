@@ -14,7 +14,7 @@ import WalletSMS from './pages/WalletSMS';
 import DataManagement from './pages/DataManagement';
 import Teachers from './pages/Teachers';
 import { View, Class, Student, Language, Madrasah, Teacher } from './types';
-import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles, ShieldAlert, Phone } from 'lucide-react';
+import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles, ShieldAlert, Phone, CloudOff, Layers, Fingerprint } from 'lucide-react';
 import { t } from './translations';
 
 const App: React.FC = () => {
@@ -69,7 +69,6 @@ const App: React.FC = () => {
         },
         (payload) => {
           const updated = payload.new as Madrasah;
-          console.log('Live Madrasah Update:', updated.is_active);
           setMadrasah(prev => prev ? { ...prev, is_active: updated.is_active } : null);
         }
       )
@@ -90,9 +89,7 @@ const App: React.FC = () => {
           },
           (payload) => {
             const updated = payload.new as Teacher;
-            console.log('Live Teacher Update:', updated.is_active);
             setTeacher(prev => prev ? { ...prev, is_active: updated.is_active } : null);
-            // If teacher specifically is blocked, immediately force state
             if (updated.is_active === false) {
                setMadrasah(prev => prev ? { ...prev, is_active: false } : null);
             }
@@ -285,57 +282,53 @@ const App: React.FC = () => {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] relative overflow-hidden mesh-bg-vibrant">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#8D30F4] rounded-full blur-[120px] opacity-40 animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#A179FF] rounded-full blur-[120px] opacity-40 animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
+          <div className="absolute top-[10%] left-[5%] w-72 h-72 bg-white rounded-full blur-[100px] animate-pulse"></div>
+          <div className="absolute bottom-[10%] right-[5%] w-96 h-96 bg-brand-lavender rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+        </div>
 
-        <div className="relative z-10 flex flex-col items-center">
-          <div className="relative w-40 h-40 flex items-center justify-center">
-            <div className="absolute inset-0 border-[3px] border-dashed border-white/20 rounded-full animate-[spin_8s_linear_infinite]"></div>
-            <div className="absolute inset-4 border-[4px] border-white/30 rounded-full animate-[ping_3s_ease-in-out_infinite] opacity-20"></div>
-            <div className="absolute inset-8 border-t-[5px] border-r-[5px] border-white border-solid rounded-full animate-spin shadow-[0_0_20px_rgba(255,255,255,0.4)]"></div>
-            <div className="relative w-16 h-16 bg-white rounded-[1.8rem] flex items-center justify-center shadow-2xl animate-[pulse_2s_ease-in-out_infinite] border-2 border-white/50">
-              <BookOpen size={32} className="text-[#8D30F4]" />
-            </div>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 animate-bounce">
-              <Sparkles size={16} className="text-white/40" />
-            </div>
-          </div>
-
-          <div className="mt-12 text-center space-y-4 px-10">
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-white font-black text-[11px] uppercase tracking-[0.6em] ml-[0.6em] opacity-90 drop-shadow-lg">
-                DEENORA
-              </span>
-              <div className="w-8 h-1 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white w-1/2 animate-[shimmer_1.5s_infinite_linear]"></div>
+        <div className="relative z-10 flex flex-col items-center max-w-sm w-full px-8">
+          <div className="glass-card w-64 h-64 flex flex-col items-center justify-center relative overflow-hidden group">
+            <div className="absolute inset-0 bg-white/5 group-hover:bg-white/10 transition-colors duration-500"></div>
+            
+            <div className="relative w-32 h-32 flex items-center justify-center">
+              <div className="absolute inset-0 border-[3px] border-dashed border-white/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
+              <div className="absolute inset-2 border-[2px] border-white/10 rounded-full animate-pulse"></div>
+              <div className="relative w-14 h-14 bg-white rounded-3xl flex items-center justify-center shadow-2xl z-10">
+                <BookOpen size={28} className="text-brand-purple" />
+              </div>
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex gap-1">
+                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></div>
+                 <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                 <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
               </div>
             </div>
-            
-            <div className="h-10 flex items-center justify-center">
-              <p className="font-bold text-white/70 text-[13px] font-noto tracking-wide animate-in fade-in slide-in-from-bottom-2 duration-700" key={loadingPhase}>
-                {messages[loadingPhase]}
-              </p>
+
+            <div className="mt-8 flex flex-col items-center gap-1.5">
+               <span className="text-white font-black text-[12px] uppercase tracking-[0.5em] ml-[0.5em] opacity-90">DEENORA</span>
+               <div className="w-12 h-1 bg-white/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-white w-full animate-[shimmer-fast_2s_infinite_linear]"></div>
+               </div>
             </div>
+          </div>
+          
+          <div className="mt-12 text-center h-12 flex items-center justify-center">
+            <p className="font-bold text-white/80 text-[14px] font-noto tracking-wide animate-in fade-in slide-in-from-bottom-2 duration-700" key={loadingPhase}>
+              {messages[loadingPhase]}
+            </p>
           </div>
         </div>
 
         <div className="absolute bottom-10 left-0 right-0 text-center opacity-30">
-          <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Authorized System Only</p>
+          <p className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Optimized for Performance</p>
         </div>
-
-        <style>{`
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
-          }
-        `}</style>
       </div>
     );
   }
 
   if (!session && !teacher) return <Auth lang={lang} />;
 
-  // Account Suspended Screen (Immediate response to Realtime update)
+  // Account Suspended Screen
   if (madrasah && madrasah.is_active === false) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#080A12] px-10 text-white text-center animate-in fade-in duration-500">
@@ -350,14 +343,14 @@ const App: React.FC = () => {
         <div className="w-full space-y-4 max-w-xs">
           <a 
             href="tel:01700000000" 
-            className="w-full py-5 bg-white text-[#080A12] font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+            className="w-full py-5 bg-white text-[#080A12] font-black rounded-[2rem] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
           >
             <Phone size={20} /> সাপোর্ট কল করুন
           </a>
           
           <button 
             onClick={logout} 
-            className="w-full py-4 bg-transparent text-white font-bold rounded-full border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+            className="w-full py-4 bg-transparent text-white font-bold rounded-[2rem] border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
           >
             <LogOut size={16} /> লগ আউট
           </button>
@@ -366,34 +359,45 @@ const App: React.FC = () => {
     );
   }
 
-  // Profile not found error screen
+  // Profile not found / Offline Sync issue screen
   if (session && !madrasah && !loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] px-10 text-white text-center mesh-bg-vibrant">
-        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-8 border-4 border-white/30 animate-pulse">
-           <AlertTriangle size={48} className="text-white" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] px-8 text-white text-center mesh-bg-vibrant relative">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <CloudOff size={300} className="absolute -top-10 -right-10 rotate-12" />
         </div>
-        <h3 className="text-2xl font-black font-noto mb-4">প্রোফাইল পাওয়া যায়নি!</h3>
-        <p className="text-sm font-bold opacity-80 font-noto leading-relaxed mb-10">
-          আপনার ইমেইল দিয়ে কোনো মাদ্রাসা প্রোফাইল সিস্টেমে রেজিস্টার করা নেই। এটি হতে পারে সার্ভার সিঙ্ক্রোনাইজেশনের জন্য। নিচের বাটনে ক্লিক করে প্রোফাইল আপডেট করুন।
-        </p>
-        
-        <div className="w-full space-y-4">
-          <button 
-            onClick={handleManualSync} 
-            disabled={syncing}
-            className="w-full py-5 bg-white text-[#9D50FF] font-black rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
-          >
-            {syncing ? <Loader2 className="animate-spin" /> : <RefreshCw size={20} />} 
-            প্রোফাইল সিঙ্ক করুন
-          </button>
+
+        <div className="glass-card w-full max-w-sm p-10 flex flex-col items-center">
+          <div className="w-24 h-24 bg-white/20 rounded-[2rem] flex items-center justify-center mb-8 border-2 border-white/40 shadow-2xl">
+             <Layers size={48} className="text-white animate-bounce" />
+          </div>
+          <h3 className="text-2xl font-black font-noto mb-4 tracking-tight">প্রোফাইল তথ্য নেই!</h3>
+          <p className="text-[13px] font-bold text-white/70 font-noto leading-relaxed mb-10">
+            আপনার ইমেইল দিয়ে কোনো মাদ্রাসা প্রোফাইল খুঁজে পাওয়া যায়নি। সার্ভার বা ইন্টারনেট জনিত সমস্যার কারণে এমন হতে পারে।
+          </p>
           
-          <button 
-            onClick={logout} 
-            className="w-full py-4 bg-transparent text-white font-bold rounded-full border border-white/30 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
-          >
-            <LogOut size={16} /> লগ আউট করুন
-          </button>
+          <div className="w-full space-y-4">
+            <button 
+              onClick={handleManualSync} 
+              disabled={syncing}
+              className="w-full py-5 bg-white text-brand-purple font-black rounded-3xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+            >
+              {syncing ? <Loader2 className="animate-spin" /> : <RefreshCw size={20} />} 
+              পুনরায় চেষ্টা করুন
+            </button>
+            
+            <button 
+              onClick={logout} 
+              className="w-full py-4 bg-white/10 text-white font-black rounded-3xl border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+            >
+              <LogOut size={16} /> লগ আউট করুন
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-8 flex items-center gap-2 opacity-40">
+           <Fingerprint size={14} />
+           <span className="text-[10px] font-black uppercase tracking-widest">System Identifier Error</span>
         </div>
       </div>
     );
@@ -404,8 +408,20 @@ const App: React.FC = () => {
   return (
     <div className="relative h-full w-full bg-transparent">
       {(!isOnline || syncing) && (
-        <div className="absolute top-0 left-0 right-0 bg-white/60 backdrop-blur-md text-[#2E0B5E] text-[10px] font-black py-1.5 px-4 z-[60] flex items-center justify-center gap-2 uppercase tracking-widest border-b border-[#8D30F4]/10">
-          {syncing ? <><RefreshCw size={12} className="animate-spin text-[#8D30F4]" /> Syncing Profile...</> : <><WifiOff size={10} className="text-red-400" /> Offline Mode</>}
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[1000] animate-in slide-in-from-top-10">
+          <div className="bg-white/20 backdrop-blur-2xl border border-white/30 rounded-full px-6 py-2.5 flex items-center gap-3 shadow-2xl">
+            {syncing ? (
+               <>
+                 <RefreshCw size={14} className="animate-spin text-white" />
+                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Syncing Data...</span>
+               </>
+            ) : (
+               <>
+                 <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Offline Mode</span>
+               </>
+            )}
+          </div>
         </div>
       )}
       
