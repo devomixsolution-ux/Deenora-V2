@@ -133,7 +133,12 @@ export const translations = {
     duplicate_teacher_pin: 'এই পিন কোডটি অন্য একজন শিক্ষকের অ্যাকাউন্টে ব্যবহৃত হয়েছে!',
     notifications: 'নোটিফিকেশন',
     no_notifications: 'কোনো নোটিফিকেশন নেই',
-    system_update: 'সিস্টেম আপডেট'
+    system_update: 'সিস্টেম আপডেট',
+    low_balance_title: 'লো ব্যালেন্স সতর্কতা',
+    low_balance_msg: 'আপনার এসএমএস ব্যালেন্স অনেক কম। অনুগ্রহ করে রিচার্জ করুন।',
+    payment_approved_msg: 'আপনার পেমেন্ট রিকোয়েস্টটি অনুমোদিত হয়েছে।',
+    payment_rejected_msg: 'আপনার পেমেন্ট রিকোয়েস্টটি বাতিল করা হয়েছে।',
+    payment_pending_msg: 'আপনার পেমেন্ট রিকোয়েস্টটি বর্তমানে অপেক্ষমান আছে।'
   },
   en: {
     home: 'Home',
@@ -266,7 +271,12 @@ export const translations = {
     duplicate_teacher_pin: 'This PIN code is already used by another teacher!',
     notifications: 'Notifications',
     no_notifications: 'No notifications',
-    system_update: 'System Update'
+    system_update: 'System Update',
+    low_balance_title: 'Low Balance Warning',
+    low_balance_msg: 'Your SMS balance is low. Please recharge soon.',
+    payment_approved_msg: 'Your payment request has been approved.',
+    payment_rejected_msg: 'Your payment request has been rejected.',
+    payment_pending_msg: 'Your payment request is currently pending.'
   }
 };
 

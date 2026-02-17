@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
-import { Home, User, BookOpen, Wallet, ShieldCheck, BarChart3, CreditCard, RefreshCw, Smartphone, Bell, X, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { View, Language, Madrasah, Teacher } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Home, User, BookOpen, Wallet, ShieldCheck, BarChart3, CreditCard, RefreshCw, Smartphone, Bell, X, Info, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import { View, Language, Madrasah, Teacher, Transaction } from '../types';
 import { t } from '../translations';
+import { supabase } from '../supabase';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,9 +15,90 @@ interface LayoutProps {
   teacher?: Teacher | null;
 }
 
+interface AppNotification {
+  id: string;
+  title: string;
+  desc: string;
+  type: 'info' | 'success' | 'error' | 'warning';
+  time: string;
+}
+
 const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, madrasah, onUpdateClick, teacher }) => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const isSuperAdmin = madrasah?.is_super_admin === true;
+
+  const fetchDynamicNotifications = async () => {
+    if (!madrasah?.id) return;
+    
+    const newNotifications: AppNotification[] = [];
+
+    // 1. Check for System Update
+    newNotifications.push({
+      id: 'sys-upd',
+      title: t('system_update', lang),
+      desc: lang === 'bn' ? 'সিস্টেম ভার্সন ২.৫.১ লাইভ করা হয়েছে।' : 'System version 2.5.1 is now live.',
+      type: 'info',
+      time: 'Just now'
+    });
+
+    // 2. Check for Low Balance
+    if (madrasah.sms_balance < 50) {
+      newNotifications.push({
+        id: 'low-bal',
+        title: t('low_balance_title', lang),
+        desc: t('low_balance_msg', lang),
+        type: 'error',
+        time: 'Active'
+      });
+    }
+
+    // 3. Check for Payment Status (Last 3 transactions)
+    try {
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('madrasah_id', madrasah.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (txs) {
+        txs.forEach((tx: Transaction) => {
+          let statusMsg = '';
+          let type: 'success' | 'error' | 'warning' = 'warning';
+          
+          if (tx.status === 'approved') {
+            statusMsg = t('payment_approved_msg', lang);
+            type = 'success';
+          } else if (tx.status === 'rejected') {
+            statusMsg = t('payment_rejected_msg', lang);
+            type = 'error';
+          } else {
+            statusMsg = t('payment_pending_msg', lang);
+            type = 'warning';
+          }
+
+          newNotifications.push({
+            id: tx.id,
+            title: lang === 'bn' ? `পেমেন্ট: ${tx.amount} ৳` : `Payment: ${tx.amount} TK`,
+            desc: statusMsg,
+            type: type,
+            time: new Date(tx.created_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US', { day: 'numeric', month: 'short' })
+          });
+        });
+      }
+    } catch (e) {
+      console.error("Notify fetch error:", e);
+    }
+
+    setNotifications(newNotifications);
+  };
+
+  useEffect(() => {
+    if (showNotifications) {
+      fetchDynamicNotifications();
+    }
+  }, [showNotifications, madrasah?.id, madrasah?.sms_balance]);
 
   const isTabActive = (tab: string) => {
     if (tab === 'home' && currentView === 'home') return true;
@@ -32,23 +114,6 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
 
   const canSeeClasses = !teacher || (teacher.permissions?.can_manage_students || teacher.permissions?.can_manage_classes);
   const canSeeWallet = !teacher || teacher.permissions?.can_send_sms;
-
-  const mockNotifications = [
-    {
-      id: 1,
-      title: lang === 'bn' ? 'সিস্টেম আপডেট ২.৫.১' : 'System Update 2.5.1',
-      desc: lang === 'bn' ? 'শিক্ষক পোর্টাল এবং ব্যাকআপ টুলস অপ্টিমাইজ করা হয়েছে।' : 'Teacher portal and backup tools have been optimized.',
-      type: 'info',
-      time: '2h ago'
-    },
-    {
-      id: 2,
-      title: lang === 'bn' ? 'রিচার্জ অফার!' : 'Recharge Offer!',
-      desc: lang === 'bn' ? '১০০০ এসএমএস রিচার্জে ৫০টি এসএমএস বোনাস।' : 'Get 50 bonus SMS on 1000 SMS recharge.',
-      type: 'success',
-      time: '1d ago'
-    }
-  ];
 
   return (
     <div className="flex flex-col w-full h-full relative bg-transparent overflow-hidden">
@@ -81,7 +146,9 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
             className="relative p-2.5 bg-white/20 backdrop-blur-md rounded-[1rem] text-white active:scale-95 transition-all border border-white/20 shadow-xl"
           >
             <Bell size={18} />
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#9D50FF] animate-pulse"></span>
+            {(madrasah?.sms_balance < 50 || notifications.length > 0) && (
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#9D50FF] animate-pulse"></span>
+            )}
           </button>
 
           <button onClick={() => window.location.reload()} className="p-2.5 bg-white/20 backdrop-blur-md rounded-[1rem] text-white active:scale-95 transition-all border border-white/20 shadow-xl">
@@ -161,11 +228,19 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
               </div>
               
               <div className="p-4 space-y-3 overflow-y-auto custom-scrollbar flex-1">
-                 {mockNotifications.map(n => (
+                 {notifications.length > 0 ? notifications.map(n => (
                     <div key={n.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 relative group active:scale-[0.98] transition-all">
                        <div className="flex gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${n.type === 'success' ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'}`}>
-                             {n.type === 'success' ? <CheckCircle2 size={18} /> : <Info size={18} />}
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                            n.type === 'success' ? 'bg-green-50 text-green-500' : 
+                            n.type === 'error' ? 'bg-red-50 text-red-500' : 
+                            n.type === 'warning' ? 'bg-orange-50 text-orange-500' :
+                            'bg-blue-50 text-blue-500'
+                          }`}>
+                             {n.type === 'success' ? <CheckCircle2 size={18} /> : 
+                              n.type === 'error' ? <AlertTriangle size={18} /> : 
+                              n.type === 'warning' ? <Clock size={18} /> : 
+                              <Info size={18} />}
                           </div>
                           <div className="min-w-0 flex-1">
                              <div className="flex items-center justify-between gap-2 mb-1">
@@ -176,8 +251,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
                           </div>
                        </div>
                     </div>
-                 ))}
-                 {mockNotifications.length === 0 && (
+                 )) : (
                    <div className="py-12 text-center">
                       <Bell size={40} className="mx-auto text-slate-200 mb-4" />
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('no_notifications', lang)}</p>
