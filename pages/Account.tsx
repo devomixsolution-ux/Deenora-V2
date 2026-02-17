@@ -174,8 +174,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
               <div className="w-40 h-40 bg-white p-2.5 rounded-full shadow-2xl border-[12px] border-slate-50 flex items-center justify-center overflow-hidden">
                 {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover rounded-full" alt="Profile" /> : <div className="w-full h-full bg-[#F2EBFF] flex items-center justify-center text-[#8D30F4]"><UserIcon size={70} strokeWidth={1.5} /></div>}
               </div>
-              {!isTeacher && <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-1 right-2 w-12 h-12 bg-[#8D30F4] text-white rounded-2xl flex items-center justify-center shadow-xl border-4 border-white active:scale-90 transition-all"><Camera size={22} /></button>}
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
             </div>
           </div>
           <div className="space-y-6">
@@ -218,7 +216,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         <button onClick={onLogout} className="w-full p-8 flex items-center justify-between group"><div className="flex items-center gap-6"><div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center"><LogOut size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-red-600 font-noto">{t('logout', lang)}</h5><p className="text-[10px] font-bold text-red-300 uppercase tracking-widest mt-1">{t('logout_system', lang)}</p></div></div><ChevronRight size={22} className="text-red-100" /></button>
       </div>
 
-      {/* SYSTEM CORE UPDATE POPUP - Optimized Spacing and Top-Aligned */}
+      {/* SYSTEM CORE UPDATE POPUP */}
       {isEditingGlobal && (
         <div className="fixed inset-0 bg-[#080A12]/90 backdrop-blur-3xl z-[9001] flex items-start justify-center p-4 pt-12 animate-in fade-in duration-300">
            <div className="bg-[#1A0B2E] w-full max-w-sm rounded-[3rem] shadow-2xl animate-in zoom-in-95 duration-500 border border-white/10 overflow-hidden flex flex-col max-h-[85vh] relative">
@@ -252,7 +250,7 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
         </div>
       )}
 
-      {/* Edit Profile Modal - Top-Aligned and Compact */}
+      {/* Edit Profile Modal - Logo option moved here */}
       {isEditingProfile && (
         <div className="fixed inset-0 bg-[#080A12]/80 backdrop-blur-2xl z-[9000] flex items-start justify-center p-4 pt-16">
            <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-500 relative max-h-[85vh] overflow-y-auto">
@@ -260,6 +258,26 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
                 <div className="flex items-center gap-3"><div className="w-10 h-10 bg-purple-50 text-[#8D30F4] rounded-xl flex items-center justify-center"><Edit3 size={20} /></div><h3 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">অ্যাকাউন্ট আপডেট</h3></div>
                 <button onClick={() => setIsEditingProfile(false)} className="w-9 h-9 bg-slate-50 text-slate-300 rounded-xl flex items-center justify-center"><X size={20} /></button>
               </div>
+
+              {/* Logo Section in Settings */}
+              <div className="flex flex-col items-center py-4 bg-slate-50 rounded-[2rem] border border-slate-100">
+                <div className="relative">
+                  <div className="w-24 h-24 bg-white p-1.5 rounded-full shadow-lg border-4 border-white flex items-center justify-center overflow-hidden">
+                    {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover rounded-full" alt="Profile" /> : <div className="w-full h-full bg-[#F2EBFF] flex items-center justify-center text-[#8D30F4]"><UserIcon size={40} /></div>}
+                  </div>
+                  {!isTeacher && (
+                    <button 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className="absolute -bottom-1 -right-1 w-9 h-9 bg-[#8D30F4] text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white active:scale-90 transition-all"
+                    >
+                      {saving ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                    </button>
+                  )}
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                </div>
+                <p className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest mt-3">মাদরাসা লোগো পরিবর্তন</p>
+              </div>
+
               <div className="space-y-3.5">
                  <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">{t('madrasah_name', lang)}</label><input type="text" className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl px-4 font-black text-[#2E0B5E] text-sm outline-none focus:border-[#8D30F4]/30" value={newName} onChange={(e) => setNewName(e.target.value)} /></div>
                  <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">{t('madrasah_phone', lang)}</label><input type="tel" className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl px-4 font-black text-[#2E0B5E] text-sm outline-none focus:border-[#8D30F4]/30" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} /></div>
