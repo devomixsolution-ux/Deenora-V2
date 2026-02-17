@@ -59,7 +59,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!madrasah?.id && !teacher?.id) return;
 
-    // 1. Monitor Madrasah status
+    // Monitor Madrasah status
     const mTargetId = teacher ? teacher.madrasah_id : madrasah?.id;
     
     const madrasahChannel = supabase
@@ -104,7 +104,8 @@ const App: React.FC = () => {
       if (data && data.is_active && data.madrasahs?.is_active) {
         setTeacher(data);
         localStorage.setItem('teacher_session', JSON.stringify(data));
-        setMadrasah({ 
+        
+        const madrasahProfile: Madrasah = { 
           id: data.madrasah_id, 
           name: data.madrasahs?.name || 'Madrasah Contact', 
           logo_url: data.madrasahs?.logo_url,
@@ -113,7 +114,9 @@ const App: React.FC = () => {
           sms_balance: 0,
           is_active: true,
           created_at: data.created_at
-        } as Madrasah);
+        };
+        setMadrasah(madrasahProfile);
+        offlineApi.setCache('profile', madrasahProfile);
       }
     } catch (e) {
       console.error("Teacher profile sync failed:", e);
@@ -121,50 +124,54 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    const initializeSession = async () => {
+    const initializeAuth = async () => {
+      // 1. Immediately check for cached teacher session
       const savedTeacher = localStorage.getItem('teacher_session');
+      const cachedProfile = offlineApi.getCache('profile');
+      
       if (savedTeacher) {
         try {
           const teacherData = JSON.parse(savedTeacher);
           setTeacher(teacherData);
-          setMadrasah({ 
-            id: teacherData.madrasah_id, 
-            name: teacherData.madrasahs?.name || 'Madrasah Contact', 
-            logo_url: teacherData.madrasahs?.logo_url,
-            is_super_admin: false,
-            balance: 0,
-            sms_balance: 0,
-            is_active: true,
-            created_at: teacherData.created_at
-          } as Madrasah);
-          if (navigator.onLine) await syncTeacherProfile(teacherData.id);
-          setLoading(false);
+          if (cachedProfile) setMadrasah(cachedProfile);
+          
+          setLoading(false); // Stop loading early if we have a teacher session
+          
+          if (navigator.onLine) syncTeacherProfile(teacherData.id);
           return;
         } catch (e) {
           localStorage.removeItem('teacher_session');
         }
       }
 
+      // 2. Check for existing Supabase session
       const { data: { session: currentSession } } = await (supabase.auth as any).getSession();
-      setSession(currentSession);
       
       if (currentSession) {
+        setSession(currentSession);
+        if (cachedProfile) setMadrasah(cachedProfile);
+        
         await fetchMadrasahProfile(currentSession.user.id);
+        setLoading(false);
       } else {
-        const cachedProfile = offlineApi.getCache('profile');
-        if (cachedProfile) {
-          setMadrasah(cachedProfile);
-        }
+        // Only if absolutely no session is found, show login
         setLoading(false);
       }
     };
 
-    initializeSession();
+    initializeAuth();
 
+    // Listener for auth state changes
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string, session: any) => {
-      setSession(session);
-      if (session) {
-        setLoading(true);
+      // Avoid flapping: only set null if the event is a definitive SIGNED_OUT
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setMadrasah(null);
+        setTeacher(null);
+        offlineApi.removeCache('profile');
+        localStorage.removeItem('teacher_session');
+      } else if (session) {
+        setSession(session);
         fetchMadrasahProfile(session.user.id);
       }
     });
@@ -181,8 +188,6 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error("fetchMadrasahProfile error:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
