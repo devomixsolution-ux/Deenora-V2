@@ -456,11 +456,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                         </div>
                       </div>
                       <div className="flex flex-col gap-3">
-                        <div className="flex gap-2 items-center">
+                        {/* Improved action area with vertical stack to prevent overflow */}
+                        <div className="flex flex-col gap-2.5">
                           <input 
                             type="number" 
                             disabled={approvingIds.has(tr.id)}
-                            className="flex-1 h-14 px-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-black text-base text-center outline-none focus:border-[#8D30F4]/20 disabled:opacity-50" 
+                            className="w-full h-14 px-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-black text-base text-center outline-none focus:border-[#8D30F4]/20 disabled:opacity-50" 
                             value={smsToCredit[tr.id] || ''} 
                             onChange={(e) => setSmsToCredit({...smsToCredit, [tr.id]: e.target.value})} 
                             placeholder="SMS Quantity" 
@@ -468,9 +469,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                           <button 
                             onClick={() => approveTransaction(tr)} 
                             disabled={approvingIds.has(tr.id) || !smsToCredit[tr.id]}
-                            className="px-8 h-14 bg-green-500 text-white font-black rounded-[1.5rem] text-sm active:scale-95 transition-all shadow-lg shadow-green-100 disabled:bg-slate-300 disabled:shadow-none flex items-center justify-center min-w-[120px]"
+                            className="w-full h-14 bg-green-500 text-white font-black rounded-[1.5rem] text-sm active:scale-95 transition-all shadow-lg shadow-green-100 disabled:bg-slate-300 disabled:shadow-none flex items-center justify-center"
                           >
-                            {approvingIds.has(tr.id) ? <Loader2 className="animate-spin" size={20} /> : 'অনুমোদন'}
+                            {approvingIds.has(tr.id) ? <Loader2 className="animate-spin" size={20} /> : 'অনুমোদন দিন'}
                           </button>
                         </div>
                         <button 
