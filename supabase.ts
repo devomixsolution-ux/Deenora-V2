@@ -83,28 +83,27 @@ export const smsApi = {
     const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id : global.reve_caller_id;
     const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id : global.reve_client_id;
 
-    // 4. Chunking Logic (Send in batches of 30 to avoid URL length issues)
-    const chunkSize = 30;
-    const phoneBatches: string[] = [];
+    // 4. Batch Processing (Smaller chunks for reliable URL length)
+    const chunkSize = 20; 
+    const batches: any[][] = [];
     
     for (let i = 0; i < students.length; i += chunkSize) {
       const chunk = students.slice(i, i + chunkSize);
-      const phones = chunk.map(s => {
+      const contentBatch = chunk.map(s => {
         let p = s.guardian_phone.replace(/\D/g, '');
-        return p.startsWith('88') ? p : `88${p}`;
-      }).join(',');
-      phoneBatches.push(phones);
+        const target = p.startsWith('88') ? p : `88${p}`;
+        return {
+          callerID: callerId,
+          toUser: target,
+          messageContent: message
+        };
+      });
+      batches.push(contentBatch);
     }
 
-    // 5. Send batches
-    const sendPromises = phoneBatches.map(async (phoneList) => {
-      const contentArray = [{
-        callerID: callerId,
-        toUser: phoneList,
-        messageContent: message
-      }];
-
-      // type=3 is mandatory for Unicode/Bengali SMS in REVE API
+    // 5. Fire SMS Requests
+    const sendPromises = batches.map(async (contentArray) => {
+      // type=3 is for Unicode (Bengali). type=1 for English.
       let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(contentArray))}`;
       
       if (clientId) {
@@ -112,9 +111,10 @@ export const smsApi = {
       }
 
       try {
+        // We use no-cors because most SMS gateways don't support CORS preflight
         await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
       } catch (err) {
-        console.warn("SMS triggered with batch, response opaque due to CORS policy.");
+        console.warn("SMS batch trigger might have failed network check, but proceeded due to no-cors mode.");
       }
     });
 
@@ -147,7 +147,7 @@ export const smsApi = {
     const p = phone.replace(/\D/g, '');
     const target = p.startsWith('88') ? p : `88${p}`;
     const content = [{ callerID: callerId, toUser: target, messageContent: message }];
-    // type=3 added for direct messages too
+    
     let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(content))}`;
     
     if (clientId) apiUrl += `&clientid=${clientId}`;
