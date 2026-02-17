@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, ShieldCheck, User as UserIcon, Loader2, Save, X, Phone, Key, CheckCircle2, Trash2, Edit3, Smartphone, MessageSquare, Layers, MessageCircle, Shield, Check, ChevronRight, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, UserPlus, ShieldCheck, User as UserIcon, Loader2, Save, X, Phone, Key, CheckCircle2, Trash2, Edit3, Smartphone, MessageSquare, Layers, MessageCircle, Shield, Check, ChevronRight, AlertTriangle, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabase';
 import { Teacher, Language, Madrasah } from '../types';
 import { t } from '../translations';
@@ -18,6 +18,7 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
   const [saving, setSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Teacher | null>(null);
+  const [warningModal, setWarningModal] = useState<{show: boolean, message: string}>({ show: false, message: '' });
   
   // Form States
   const [editId, setEditId] = useState<string | null>(null);
@@ -71,10 +72,14 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
         const hasCodeMatch = duplicates.some(d => d.login_code === cleanCode);
 
         if (hasPhoneMatch) {
-          throw new Error(t('duplicate_teacher_phone', lang));
+          setWarningModal({ show: true, message: t('duplicate_teacher_phone', lang) });
+          setSaving(false);
+          return;
         }
         if (hasCodeMatch) {
-          throw new Error(t('duplicate_teacher_pin', lang));
+          setWarningModal({ show: true, message: t('duplicate_teacher_pin', lang) });
+          setSaving(false);
+          return;
         }
       }
 
@@ -98,7 +103,7 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
       resetForm();
       fetchTeachers();
     } catch (e: any) { 
-      alert(e.message); 
+      setWarningModal({ show: true, message: e.message });
     } finally { 
       setSaving(false); 
     }
@@ -121,7 +126,7 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
       setShowDeleteConfirm(null);
       fetchTeachers();
     } catch (e: any) { 
-      alert(e.message); 
+      setWarningModal({ show: true, message: e.message });
     } finally { 
       setIsDeleting(false); 
     }
@@ -333,6 +338,32 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
                     <div className="h-10"></div> {/* Extra spacing for mobile keyboards */}
                  </div>
               </div>
+           </div>
+        </div>
+      )}
+
+      {/* Warning/Validation Error Modal - Enhanced Design */}
+      {warningModal.show && (
+        <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[1500] flex items-center justify-center p-8 animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-500">
+              <div className="relative">
+                 <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto border border-red-100 relative z-10">
+                    <AlertTriangle size={40} />
+                 </div>
+                 <div className="absolute inset-0 bg-red-500/10 rounded-full animate-ping opacity-30"></div>
+              </div>
+              <div>
+                 <h3 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">সতর্কবাণী</h3>
+                 <p className="text-[13px] font-bold text-slate-500 mt-2 font-noto leading-relaxed">
+                   {warningModal.message}
+                 </p>
+              </div>
+              <button 
+                onClick={() => setWarningModal({ show: false, message: '' })} 
+                className="w-full py-4 bg-[#2E0B5E] text-white font-black rounded-full shadow-xl shadow-slate-200 active:scale-95 transition-all text-xs uppercase tracking-widest"
+              >
+                ঠিক আছে
+              </button>
            </div>
         </div>
       )}
