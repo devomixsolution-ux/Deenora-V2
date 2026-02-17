@@ -171,10 +171,19 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
       <div className="relative pt-20 px-1">
         <div className="bg-white rounded-[4.5rem] p-10 pt-28 shadow-[0_30px_70px_-20px_rgba(46,11,94,0.2)] border border-slate-50 relative text-center">
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-20">
-            <div className="relative">
+            <div className="relative group">
               <div className="w-40 h-40 bg-white p-2.5 rounded-full shadow-2xl border-[12px] border-slate-50 flex items-center justify-center overflow-hidden">
                 {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover rounded-full" alt="Profile" /> : <div className="w-full h-full bg-[#F2EBFF] flex items-center justify-center text-[#8D30F4]"><UserIcon size={70} strokeWidth={1.5} /></div>}
               </div>
+              {!isTeacher && (
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="absolute bottom-2 right-2 w-11 h-11 bg-[#8D30F4] text-white rounded-2xl flex items-center justify-center shadow-xl border-4 border-white active:scale-90 transition-all z-30"
+                >
+                  {saving ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+                </button>
+              )}
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
             </div>
           </div>
           <div className="space-y-6">
@@ -277,24 +286,6 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
               <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3"><div className="w-10 h-10 bg-purple-50 text-[#8D30F4] rounded-xl flex items-center justify-center"><Edit3 size={20} /></div><h3 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight">অ্যাকাউন্ট আপডেট</h3></div>
                 <button onClick={() => setIsEditingProfile(false)} className="w-9 h-9 bg-slate-50 text-slate-300 rounded-xl flex items-center justify-center"><X size={20} /></button>
-              </div>
-
-              <div className="flex flex-col items-center py-4 bg-slate-50 rounded-[2rem] border border-slate-100">
-                <div className="relative">
-                  <div className="w-24 h-24 bg-white p-1.5 rounded-full shadow-lg border-4 border-white flex items-center justify-center overflow-hidden">
-                    {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover rounded-full" alt="Profile" /> : <div className="w-full h-full bg-[#F2EBFF] flex items-center justify-center text-[#8D30F4]"><UserIcon size={40} /></div>}
-                  </div>
-                  {!isTeacher && (
-                    <button 
-                      onClick={() => fileInputRef.current?.click()} 
-                      className="absolute -bottom-1 -right-1 w-9 h-9 bg-[#8D30F4] text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white active:scale-90 transition-all"
-                    >
-                      {saving ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-                    </button>
-                  )}
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-                </div>
-                <p className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest mt-3">মাদরাসা লোগো পরিবর্তন</p>
               </div>
 
               <div className="space-y-3.5">
