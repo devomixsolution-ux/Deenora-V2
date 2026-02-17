@@ -28,6 +28,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
     currentView === 'approvals' ? 'approvals' : currentView === 'dashboard' ? 'dashboard' : 'list'
   );
   const [smsToCredit, setSmsToCredit] = useState<{ [key: string]: string }>({});
+  const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
 
   const [statusModal, setStatusModal] = useState<{show: boolean, type: 'success' | 'error', title: string, message: string}>({
     show: false,
@@ -241,6 +242,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       setStatusModal({ show: true, type: 'error', title: 'ত্রুটি', message: 'সঠিক SMS সংখ্যা লিখুন' });
       return;
     }
+    
+    setApprovingIds(prev => new Set(prev).add(tr.id));
     try {
       const { error: updateErr } = await supabase.from('transactions').update({ sms_count: sms }).eq('id', tr.id);
       if (updateErr) throw updateErr;
@@ -254,6 +257,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
       initData();
     } catch (err: any) {
       setStatusModal({ show: true, type: 'error', title: 'ব্যর্থ', message: err.message });
+    } finally {
+      setApprovingIds(prev => {
+        const next = new Set(prev);
+        next.delete(tr.id);
+        return next;
+      });
     }
   };
 
@@ -450,18 +459,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                         <div className="flex gap-2 items-center">
                           <input 
                             type="number" 
-                            className="flex-1 h-14 px-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-black text-base text-center outline-none focus:border-[#8D30F4]/20" 
+                            disabled={approvingIds.has(tr.id)}
+                            className="flex-1 h-14 px-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-black text-base text-center outline-none focus:border-[#8D30F4]/20 disabled:opacity-50" 
                             value={smsToCredit[tr.id] || ''} 
                             onChange={(e) => setSmsToCredit({...smsToCredit, [tr.id]: e.target.value})} 
                             placeholder="SMS Quantity" 
                           />
-                          <button onClick={() => approveTransaction(tr)} className="px-8 h-14 bg-green-500 text-white font-black rounded-[1.5rem] text-sm active:scale-95 transition-all shadow-lg shadow-green-100">অনুমোদন</button>
+                          <button 
+                            onClick={() => approveTransaction(tr)} 
+                            disabled={approvingIds.has(tr.id) || !smsToCredit[tr.id]}
+                            className="px-8 h-14 bg-green-500 text-white font-black rounded-[1.5rem] text-sm active:scale-95 transition-all shadow-lg shadow-green-100 disabled:bg-slate-300 disabled:shadow-none flex items-center justify-center min-w-[120px]"
+                          >
+                            {approvingIds.has(tr.id) ? <Loader2 className="animate-spin" size={20} /> : 'অনুমোদন'}
+                          </button>
                         </div>
-                        <button onClick={() => setRejectConfirm(tr)} className="w-full h-12 bg-red-50 text-red-500 font-black rounded-[1.5rem] text-xs active:scale-95 transition-all border border-red-100">রিকোয়েস্ট বাতিল করুন</button>
+                        <button 
+                          onClick={() => setRejectConfirm(tr)} 
+                          disabled={approvingIds.has(tr.id)}
+                          className="w-full h-12 bg-red-50 text-red-500 font-black rounded-[1.5rem] text-xs active:scale-95 transition-all border border-red-100 disabled:opacity-50"
+                        >
+                          রিকোয়েস্ট বাতিল করুন
+                        </button>
                       </div>
                     </div>
                   )) : (
-                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/30">
+                    <div className="text-center py-10 bg-white/10 rounded-[2.5rem] border-2 border-dashed border-white/20">
                       <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">No Pending Requests</p>
                     </div>
                   )}
