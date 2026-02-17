@@ -15,6 +15,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+/**
+ * Normalizes phone numbers to the 880XXXXXXXXXX format required by most BD gateways.
+ */
+const normalizePhone = (phone: string): string => {
+  let p = phone.replace(/\D/g, ''); // Remove non-digits
+  if (p.startsWith('880')) return p;
+  if (p.startsWith('88')) p = p.substring(2); // Remove 88 if it doesn't have a 0
+  if (p.startsWith('0')) p = p.substring(1); // Remove leading local 0
+  return `880${p}`;
+};
+
 export const smsApi = {
   getGlobalSettings: async () => {
     try {
@@ -83,38 +94,37 @@ export const smsApi = {
     const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id : global.reve_caller_id;
     const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id : global.reve_client_id;
 
-    // 4. Batch Processing (Smaller chunks for reliable URL length)
-    const chunkSize = 20; 
-    const batches: any[][] = [];
+    // 4. Batch Processing - Using the "Multi Contact with same content" format from docs
+    // Docs: ...&content=[{"callerID":"...","toUser":"8801811,8801749","messageContent":"..."}]
+    const chunkSize = 50; 
+    const batches: string[] = [];
     
     for (let i = 0; i < students.length; i += chunkSize) {
       const chunk = students.slice(i, i + chunkSize);
-      const contentBatch = chunk.map(s => {
-        let p = s.guardian_phone.replace(/\D/g, '');
-        const target = p.startsWith('88') ? p : `88${p}`;
-        return {
-          callerID: callerId,
-          toUser: target,
-          messageContent: message
-        };
-      });
-      batches.push(contentBatch);
+      const phoneList = chunk.map(s => normalizePhone(s.guardian_phone)).join(',');
+      batches.push(phoneList);
     }
 
     // 5. Fire SMS Requests
-    const sendPromises = batches.map(async (contentArray) => {
-      // type=3 is for Unicode (Bengali). type=1 for English.
-      let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(contentArray))}`;
+    const sendPromises = batches.map(async (toUsers) => {
+      const content = [{
+        callerID: callerId,
+        toUser: toUsers,
+        messageContent: message
+      }];
+
+      // type=3 is mandatory for Unicode/Bengali in REVE SMPP gateway
+      let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(content))}`;
       
       if (clientId) {
         apiUrl += `&clientid=${clientId}`;
       }
 
       try {
-        // We use no-cors because most SMS gateways don't support CORS preflight
+        // Mode: 'no-cors' is used as the gateway doesn't provide CORS headers
         await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
       } catch (err) {
-        console.warn("SMS batch trigger might have failed network check, but proceeded due to no-cors mode.");
+        console.warn("SMS batch failed to trigger network request:", err);
       }
     });
 
@@ -144,11 +154,10 @@ export const smsApi = {
       }
     }
 
-    const p = phone.replace(/\D/g, '');
-    const target = p.startsWith('88') ? p : `88${p}`;
-    const content = [{ callerID: callerId, toUser: target, messageContent: message }];
+    const target = normalizePhone(phone);
     
-    let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(content))}`;
+    // Using /sendtext for single direct messages as per documentation "Submitted API"
+    let apiUrl = `https://smpp.revesms.com:7790/sendtext?apikey=${apiKey}&secretkey=${secretKey}&callerID=${callerId}&toUser=${target}&messageContent=${encodeURIComponent(message)}&type=3`;
     
     if (clientId) apiUrl += `&clientid=${clientId}`;
     
