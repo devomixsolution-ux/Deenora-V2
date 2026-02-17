@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Clock, User as UserIcon, RefreshCw, PhoneCall, X, MessageCircle, Phone, AlertCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Search, Clock, User as UserIcon, RefreshCw, PhoneCall, X, MessageCircle, Phone, AlertCircle, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase, offlineApi } from '../supabase';
 import { Student, RecentCall, Language } from '../types';
 import { t } from '../translations';
@@ -20,6 +21,11 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  
+  // Deletion States
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchRecentCalls = async (isManual = false) => {
     if (!madrasahId) {
@@ -34,7 +40,6 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
     }
     
     const cached = offlineApi.getCache('recent_calls');
-    // Ensure cached data is also sliced to 20
     if (cached && !isManual) {
       setRecentCalls(cached.slice(0, 20));
       setLoadingRecent(false);
@@ -63,7 +68,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
           `)
           .eq('madrasah_id', madrasahId)
           .order('called_at', { ascending: false })
-          .limit(20); // Strict DB limit
+          .limit(20);
         
         if (error) throw error;
         
@@ -121,6 +126,50 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
     }
   };
 
+  const deleteSingleCall = async (id: string) => {
+    if (!madrasahId) return;
+    try {
+      const { error } = await supabase
+        .from('recent_calls')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setRecentCalls(prev => prev.filter(c => c.id !== id));
+      const cached = offlineApi.getCache('recent_calls');
+      if (cached) {
+        offlineApi.setCache('recent_calls', cached.filter((c: any) => c.id !== id));
+      }
+    } catch (err) {
+      console.error("Delete call error:", err);
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
+  const clearAllHistory = async () => {
+    if (!madrasahId) return;
+    setIsClearing(true);
+    try {
+      const { error } = await supabase
+        .from('recent_calls')
+        .delete()
+        .eq('madrasah_id', madrasahId);
+      
+      if (error) throw error;
+      
+      setRecentCalls([]);
+      offlineApi.removeCache('recent_calls');
+      triggerRefresh();
+    } catch (err) {
+      console.error("Clear history error:", err);
+    } finally {
+      setIsClearing(false);
+      setShowClearConfirm(false);
+    }
+  };
+
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim() || !madrasahId) { setSearchResults([]); return; }
     
@@ -174,7 +223,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
           <input
             type="text"
             placeholder={t('search_placeholder', lang)}
-            className="w-full pl-16 pr-14 py-5 bg-white/95 backdrop-blur-2xl border border-white/50 rounded-[2rem] outline-none text-[#2E0B5E] placeholder:text-[#9B6DFF]/60 font-bold text-base shadow-[0_15px_40px_-10px_rgba(46,11,94,0.2)] focus:shadow-[0_20px_60px_-10px_rgba(141,48,244,0.3)] focus:border-[#8D30F4]/30 transition-all duration-300"
+            className="w-full h-16 pl-16 pr-14 bg-white/95 backdrop-blur-2xl border border-white/50 rounded-[2rem] outline-none text-[#2E0B5E] placeholder:text-[#9B6DFF]/60 font-bold text-base shadow-[0_15px_40px_-10px_rgba(46,11,94,0.2)] focus:shadow-[0_20px_60px_-10px_rgba(141,48,244,0.3)] focus:border-[#8D30F4]/30 transition-all duration-300"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -213,18 +262,29 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
         </div>
       )}
 
-      <div className="space-y-3.5 px-1">
+      <div className="space-y-3.5 px-1 pb-10">
         <div className="flex items-center justify-between px-3">
           <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em] drop-shadow-md opacity-80">
             {t('recent_calls', lang)} <span className="text-[9px] opacity-40 ml-1">(Top 20)</span>
           </h2>
-          <button 
-            onClick={() => fetchRecentCalls(true)} 
-            className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md active:scale-95 transition-all flex items-center gap-2 px-3"
-          >
-            <span className="text-[9px] font-black uppercase tracking-widest">{loadingRecent ? '...' : (lang === 'bn' ? 'রিফ্রেশ' : 'Refresh')}</span>
-            <RefreshCw size={14} strokeWidth={3} className={loadingRecent ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-2">
+            {recentCalls.length > 0 && (
+              <button 
+                onClick={() => setShowClearConfirm(true)} 
+                className="p-2 bg-red-500/10 rounded-xl text-red-500 backdrop-blur-md active:scale-95 transition-all flex items-center gap-1.5 px-3 border border-red-500/10"
+              >
+                <Trash2 size={14} strokeWidth={3} />
+                <span className="text-[9px] font-black uppercase tracking-widest">{t('clear', lang)}</span>
+              </button>
+            )}
+            <button 
+              onClick={() => fetchRecentCalls(true)} 
+              className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md active:scale-95 transition-all flex items-center gap-2 px-3"
+            >
+              <span className="text-[9px] font-black uppercase tracking-widest">{loadingRecent ? '...' : (lang === 'bn' ? 'রিফ্রেশ' : 'Refresh')}</span>
+              <RefreshCw size={14} strokeWidth={3} className={loadingRecent ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
         
         {fetchError && (
@@ -261,6 +321,12 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
                   </div>
                 </div>
                 <div className="flex items-center gap-6 shrink-0 ml-2">
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); setDeleteId(call.id); }} 
+                     className="w-9 h-9 bg-red-50 text-red-500 rounded-lg flex items-center justify-center active:scale-90 transition-all border border-red-100/50"
+                   >
+                     <Trash2 size={16} />
+                   </button>
                    <div onClick={(e) => { e.stopPropagation(); call.students && initiateNormalCall(call.students.id, call.students.guardian_phone) }} className="w-10 h-10 bg-[#8D30F4]/10 text-[#8D30F4] rounded-xl flex items-center justify-center shadow-sm active:scale-90 transition-all border border-[#8D30F4]/10">
                      <Phone size={20} fill="currentColor" />
                    </div>
@@ -283,6 +349,67 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
           </div>
         )}
       </div>
+
+      {/* Clear All Confirmation Modal */}
+      {showClearConfirm && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-500">
+              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
+                 <AlertTriangle size={40} />
+              </div>
+              <div>
+                 <h3 className="text-xl font-black text-slate-800 font-noto tracking-tight">{t('clear_history', lang)}</h3>
+                 <p className="font-bold text-slate-400 mt-2 text-[13px] leading-relaxed">
+                   {t('confirm_clear_history', lang)}
+                 </p>
+              </div>
+              <div className="flex flex-col gap-3 pt-2">
+                <button 
+                  onClick={clearAllHistory} 
+                  disabled={isClearing}
+                  className="w-full py-5 bg-red-500 text-white font-black rounded-full shadow-xl shadow-red-100 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                >
+                  {isClearing ? <Loader2 className="animate-spin" size={20} /> : <><Trash2 size={18} /> {t('confirm_btn', lang)}</>}
+                </button>
+                <button 
+                  onClick={() => setShowClearConfirm(false)} 
+                  disabled={isClearing}
+                  className="w-full py-4 bg-slate-100 text-[#2E0B5E] rounded-full font-black text-xs uppercase tracking-widest active:scale-95 transition-all"
+                >
+                  {t('cancel_btn', lang)}
+                </button>
+              </div>
+           </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Single Delete Confirmation */}
+      {deleteId && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(0,0,0,0.1)] text-center space-y-6 animate-in zoom-in-95 duration-300">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
+                 <Trash2 size={32} />
+              </div>
+              <h3 className="text-lg font-black text-slate-800 font-noto">এই কল হিস্ট্রি মুছুন?</h3>
+              <div className="flex flex-col gap-2 pt-2">
+                <button 
+                  onClick={() => deleteSingleCall(deleteId)} 
+                  className="w-full py-4 bg-red-500 text-white font-black rounded-full shadow-lg active:scale-95 transition-all text-xs uppercase tracking-widest"
+                >
+                  ডিলিট করুন
+                </button>
+                <button 
+                  onClick={() => setDeleteId(null)} 
+                  className="w-full py-3 bg-slate-50 text-slate-400 font-black rounded-full text-[10px] uppercase active:scale-95 transition-all"
+                >
+                  বাতিল
+                </button>
+              </div>
+           </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

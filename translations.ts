@@ -138,7 +138,9 @@ export const translations = {
     low_balance_msg: 'আপনার এসএমএস ব্যালেন্স অনেক কম। অনুগ্রহ করে রিচার্জ করুন।',
     payment_approved_msg: 'আপনার পেমেন্ট রিকোয়েস্টটি অনুমোদিত হয়েছে।',
     payment_rejected_msg: 'আপনার পেমেন্ট রিকোয়েস্টটি বাতিল করা হয়েছে।',
-    payment_pending_msg: 'আপনার পেমেন্ট রিকোয়েস্টটি বর্তমানে অপেক্ষমান আছে।'
+    payment_pending_msg: 'আপনার পেমেন্ট রিকোয়েস্টটি বর্তমানে অপেক্ষমান আছে।',
+    clear_history: 'হিস্ট্রি মুছুন',
+    confirm_clear_history: 'আপনি কি নিশ্চিতভাবে সকল কল হিস্ট্রি মুছে ফেলতে চান?'
   },
   en: {
     home: 'Home',
@@ -276,7 +278,9 @@ export const translations = {
     low_balance_msg: 'Your SMS balance is low. Please recharge soon.',
     payment_approved_msg: 'Your payment request has been approved.',
     payment_rejected_msg: 'Your payment request has been rejected.',
-    payment_pending_msg: 'Your payment request is currently pending.'
+    payment_pending_msg: 'Your payment request is currently pending.',
+    clear_history: 'Clear History',
+    confirm_clear_history: 'Are you sure you want to clear all call history?'
   }
 };
 
