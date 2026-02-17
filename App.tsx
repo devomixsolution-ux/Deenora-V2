@@ -14,7 +14,7 @@ import WalletSMS from './pages/WalletSMS';
 import DataManagement from './pages/DataManagement';
 import Teachers from './pages/Teachers';
 import { View, Class, Student, Language, Madrasah, Teacher } from './types';
-import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles, ShieldAlert, Phone, CloudOff, Layers, Fingerprint } from 'lucide-react';
+import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles, ShieldAlert, Phone, CloudOff, Layers, Fingerprint, SignalLow, PhoneCall } from 'lucide-react';
 import { t } from './translations';
 
 const App: React.FC = () => {
@@ -41,7 +41,12 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    const handleStatusChange = () => setIsOnline(navigator.onLine);
+    const handleStatusChange = () => {
+      setIsOnline(navigator.onLine);
+      if (navigator.onLine) {
+        offlineApi.processQueue();
+      }
+    };
     window.addEventListener('online', handleStatusChange);
     window.addEventListener('offline', handleStatusChange);
     return () => {
@@ -54,7 +59,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!madrasah?.id && !teacher?.id) return;
 
-    // 1. Monitor Madrasah status (Affects both Admins and Teachers)
+    // 1. Monitor Madrasah status
     const mTargetId = teacher ? teacher.madrasah_id : madrasah?.id;
     
     const madrasahChannel = supabase
@@ -74,37 +79,11 @@ const App: React.FC = () => {
       )
       .subscribe();
 
-    // 2. Monitor Teacher specific status (If logged in as teacher)
-    let teacherChannel: any = null;
-    if (teacher?.id) {
-      teacherChannel = supabase
-        .channel('live-status-t')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'teachers',
-            filter: `id=eq.${teacher.id}`,
-          },
-          (payload) => {
-            const updated = payload.new as Teacher;
-            setTeacher(prev => prev ? { ...prev, is_active: updated.is_active } : null);
-            if (updated.is_active === false) {
-               setMadrasah(prev => prev ? { ...prev, is_active: false } : null);
-            }
-          }
-        )
-        .subscribe();
-    }
-
     return () => {
       supabase.removeChannel(madrasahChannel);
-      if (teacherChannel) supabase.removeChannel(teacherChannel);
     };
   }, [madrasah?.id, teacher?.id]);
 
-  // Message cycle for loading screen
   useEffect(() => {
     if (loading) {
       const interval = setInterval(() => {
@@ -135,9 +114,6 @@ const App: React.FC = () => {
           is_active: true,
           created_at: data.created_at
         } as Madrasah);
-      } else if (data && (!data.is_active || !data.madrasahs?.is_active)) {
-        setMadrasah(prev => prev ? { ...prev, is_active: false } : { is_active: false } as Madrasah);
-        setLoading(false);
       }
     } catch (e) {
       console.error("Teacher profile sync failed:", e);
@@ -187,90 +163,34 @@ const App: React.FC = () => {
 
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string, session: any) => {
       setSession(session);
-      
       if (session) {
         setLoading(true);
         fetchMadrasahProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        if (!localStorage.getItem('teacher_session')) {
-          setMadrasah(null);
-          setView('home');
-        }
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchMadrasahProfile = async (userId: string, retryCount = 0) => {
+  const fetchMadrasahProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase.from('madrasahs').select('*').eq('id', userId).maybeSingle();
-      
+      const { data } = await supabase.from('madrasahs').select('*').eq('id', userId).maybeSingle();
       if (data) {
         setMadrasah(data);
         offlineApi.setCache('profile', data);
-        setLoading(false);
-      } else if (error && retryCount < 3) {
-        setTimeout(() => fetchMadrasahProfile(userId, retryCount + 1), 1500);
-      } else {
-        if (!madrasah) setMadrasah(null);
-        setLoading(false);
       }
     } catch (err) {
       console.error("fetchMadrasahProfile error:", err);
-      setLoading(false);
-    }
-  };
-
-  const handleManualSync = async () => {
-    if (!session?.user) return;
-    setSyncing(true);
-    try {
-      const { data: existing } = await supabase.from('madrasahs').select('id').eq('id', session.user.id).maybeSingle();
-      
-      if (!existing) {
-        const { error: insertError } = await supabase.from('madrasahs').insert({
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.email?.split('@')[0] || 'New Madrasah',
-          is_active: true,
-          is_super_admin: false
-        });
-        if (insertError) throw insertError;
-      }
-      await fetchMadrasahProfile(session.user.id);
-    } catch (err: any) {
-      alert(lang === 'bn' ? 'সিঙ্ক ব্যর্থ হয়েছে: ' + err.message : 'Sync Failed: ' + err.message);
     } finally {
-      setSyncing(false);
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     localStorage.removeItem('teacher_session');
-    localStorage.removeItem('m_name');
     offlineApi.removeCache('profile');
-    
-    if (session) {
-      await (supabase.auth as any).signOut();
-    }
-    
-    setMadrasah(null);
-    setTeacher(null);
-    setSession(null);
-    setView('home');
+    if (session) await (supabase.auth as any).signOut();
     window.location.reload();
-  };
-
-  const navigateTo = (newView: View) => {
-    if (teacher) {
-      const perms = teacher.permissions;
-      if (newView === 'classes' && !perms.can_manage_classes && !perms.can_manage_students) return;
-      if (newView === 'wallet-sms' && !perms.can_send_sms && !perms.can_send_free_sms) return;
-      if (['admin-panel', 'admin-dashboard', 'admin-approvals'].includes(newView)) return;
-    }
-    triggerRefresh();
-    setView(newView);
   };
 
   if (loading) {
@@ -282,28 +202,14 @@ const App: React.FC = () => {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] relative overflow-hidden mesh-bg-vibrant">
-        <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
-          <div className="absolute top-[10%] left-[5%] w-72 h-72 bg-white rounded-full blur-[100px] animate-pulse"></div>
-          <div className="absolute bottom-[10%] right-[5%] w-96 h-96 bg-brand-lavender rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
-        </div>
-
         <div className="relative z-10 flex flex-col items-center max-w-sm w-full px-8">
           <div className="glass-card w-64 h-64 flex flex-col items-center justify-center relative overflow-hidden group">
-            <div className="absolute inset-0 bg-white/5 group-hover:bg-white/10 transition-colors duration-500"></div>
-            
             <div className="relative w-32 h-32 flex items-center justify-center">
               <div className="absolute inset-0 border-[3px] border-dashed border-white/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
-              <div className="absolute inset-2 border-[2px] border-white/10 rounded-full animate-pulse"></div>
               <div className="relative w-14 h-14 bg-white rounded-3xl flex items-center justify-center shadow-2xl z-10">
                 <BookOpen size={28} className="text-brand-purple" />
               </div>
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex gap-1">
-                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></div>
-                 <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                 <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
             </div>
-
             <div className="mt-8 flex flex-col items-center gap-1.5">
                <span className="text-white font-black text-[12px] uppercase tracking-[0.5em] ml-[0.5em] opacity-90">DEENORA</span>
                <div className="w-12 h-1 bg-white/20 rounded-full overflow-hidden">
@@ -311,16 +217,51 @@ const App: React.FC = () => {
                </div>
             </div>
           </div>
-          
-          <div className="mt-12 text-center h-12 flex items-center justify-center">
-            <p className="font-bold text-white/80 text-[14px] font-noto tracking-wide animate-in fade-in slide-in-from-bottom-2 duration-700" key={loadingPhase}>
+          <div className="mt-12 text-center h-12">
+            <p className="font-bold text-white/80 text-[14px] font-noto tracking-wide animate-in fade-in duration-700" key={loadingPhase}>
               {messages[loadingPhase]}
             </p>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        <div className="absolute bottom-10 left-0 right-0 text-center opacity-30">
-          <p className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Optimized for Performance</p>
+  // Improved Full Screen Offline Interface
+  if (!isOnline && !madrasah) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#080A12] px-8 text-center mesh-bg-vibrant">
+        <div className="glass-card p-10 max-w-sm w-full space-y-8 animate-in zoom-in-95 duration-500">
+           <div className="w-24 h-24 bg-white/10 rounded-[2.5rem] flex items-center justify-center mx-auto border-2 border-white/20 shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-white/5 animate-pulse"></div>
+              <WifiOff size={48} className="text-white relative z-10 animate-pulse" />
+           </div>
+           
+           <div className="space-y-3">
+              <h2 className="text-2xl font-black text-white font-noto">ইন্টারনেট সংযোগ নেই</h2>
+              <p className="text-[13px] font-bold text-white/60 font-noto leading-relaxed">
+                আপনার ডিভাইসে ইন্টারনেট সংযোগ পাওয়া যাচ্ছে না। পূর্বের সেভ করা ডাটা দেখতে ইন্টারনেট সংযোগ চালু করুন অথবা অফলাইন মোড ব্যবহার করুন।
+              </p>
+           </div>
+
+           <div className="space-y-4 pt-4">
+              <button 
+                onClick={() => window.location.reload()} 
+                className="w-full py-5 bg-white text-brand-purple font-black rounded-[2rem] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+              >
+                <RefreshCw size={20} /> পুনরায় চেষ্টা করুন
+              </button>
+              
+              <div className="flex items-center gap-2 justify-center opacity-40">
+                 <SignalLow size={14} className="text-white" />
+                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Searching for network...</span>
+              </div>
+           </div>
+        </div>
+        
+        <div className="mt-12 space-y-2 opacity-50">
+           <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Deenora Madrasah Management</p>
+           <p className="text-[8px] font-bold text-white uppercase tracking-widest">Version {APP_VERSION}</p>
         </div>
       </div>
     );
@@ -328,98 +269,44 @@ const App: React.FC = () => {
 
   if (!session && !teacher) return <Auth lang={lang} />;
 
-  // Account Suspended Screen
   if (madrasah && madrasah.is_active === false) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#080A12] px-10 text-white text-center animate-in fade-in duration-500">
-        <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-8 border-4 border-red-500/30 animate-pulse">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#080A12] px-10 text-white text-center">
+        <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-8 border-4 border-red-500/30">
            <ShieldAlert size={48} className="text-red-500" />
         </div>
-        <h3 className="text-2xl font-black font-noto mb-4 text-red-500">অ্যাকাউন্ট স্থগিত করা হয়েছে</h3>
+        <h3 className="text-2xl font-black font-noto mb-4 text-red-500">অ্যাকাউন্ট স্থগিত</h3>
         <p className="text-sm font-bold opacity-80 font-noto leading-relaxed mb-10 max-w-xs mx-auto">
-          দুঃখিত, আপনার পোর্টালে প্রবেশাধিকার সাময়িকভাবে বন্ধ করা হয়েছে। বিস্তারিত জানতে বা পুনরায় চালু করতে অ্যাডমিনের সাথে যোগাযোগ করুন।
+          আপনার পোর্টালে প্রবেশাধিকার সাময়িকভাবে বন্ধ করা হয়েছে। বিস্তারিত জানতে অ্যাডমিনের সাথে যোগাযোগ করুন।
         </p>
-        
-        <div className="w-full space-y-4 max-w-xs">
-          <a 
-            href="tel:01700000000" 
-            className="w-full py-5 bg-white text-[#080A12] font-black rounded-[2rem] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
-          >
-            <Phone size={20} /> সাপোর্ট কল করুন
-          </a>
-          
-          <button 
-            onClick={logout} 
-            className="w-full py-4 bg-transparent text-white font-bold rounded-[2rem] border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
-          >
-            <LogOut size={16} /> লগ আউট
-          </button>
+        <div className="w-full space-y-4 max-w-xs mx-auto">
+           <a href="tel:01700000000" className="w-full py-5 bg-white text-[#080A12] font-black rounded-[2rem] flex items-center justify-center gap-3 uppercase tracking-widest text-sm"><PhoneCall size={20} /> সাপোর্ট কল</a>
+           <button onClick={logout} className="w-full py-4 bg-transparent text-white font-bold rounded-[2rem] border border-white/20 uppercase tracking-widest text-xs">লগ আউট</button>
         </div>
       </div>
     );
   }
 
-  // Profile not found / Offline Sync issue screen
-  if (session && !madrasah && !loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#9D50FF] px-8 text-white text-center mesh-bg-vibrant relative">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <CloudOff size={300} className="absolute -top-10 -right-10 rotate-12" />
-        </div>
-
-        <div className="glass-card w-full max-w-sm p-10 flex flex-col items-center">
-          <div className="w-24 h-24 bg-white/20 rounded-[2rem] flex items-center justify-center mb-8 border-2 border-white/40 shadow-2xl">
-             <Layers size={48} className="text-white animate-bounce" />
-          </div>
-          <h3 className="text-2xl font-black font-noto mb-4 tracking-tight">প্রোফাইল তথ্য নেই!</h3>
-          <p className="text-[13px] font-bold text-white/70 font-noto leading-relaxed mb-10">
-            আপনার ইমেইল দিয়ে কোনো মাদ্রাসা প্রোফাইল খুঁজে পাওয়া যায়নি। সার্ভার বা ইন্টারনেট জনিত সমস্যার কারণে এমন হতে পারে।
-          </p>
-          
-          <div className="w-full space-y-4">
-            <button 
-              onClick={handleManualSync} 
-              disabled={syncing}
-              className="w-full py-5 bg-white text-brand-purple font-black rounded-3xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
-            >
-              {syncing ? <Loader2 className="animate-spin" /> : <RefreshCw size={20} />} 
-              পুনরায় চেষ্টা করুন
-            </button>
-            
-            <button 
-              onClick={logout} 
-              className="w-full py-4 bg-white/10 text-white font-black rounded-3xl border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
-            >
-              <LogOut size={16} /> লগ আউট করুন
-            </button>
-          </div>
-        </div>
-        
-        <div className="mt-8 flex items-center gap-2 opacity-40">
-           <Fingerprint size={14} />
-           <span className="text-[10px] font-black uppercase tracking-widest">System Identifier Error</span>
-        </div>
-      </div>
-    );
-  }
-
-  const isSuperAdmin = madrasah?.is_super_admin === true;
+  const navigateTo = (newView: View) => {
+    if (teacher) {
+      const perms = teacher.permissions;
+      if (newView === 'classes' && !perms.can_manage_classes && !perms.can_manage_students) return;
+      if (newView === 'wallet-sms' && !perms.can_send_sms) return;
+      if (['admin-panel', 'admin-dashboard', 'admin-approvals'].includes(newView)) return;
+    }
+    triggerRefresh();
+    setView(newView);
+  };
 
   return (
     <div className="relative h-full w-full bg-transparent">
       {(!isOnline || syncing) && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[1000] animate-in slide-in-from-top-10">
-          <div className="bg-white/20 backdrop-blur-2xl border border-white/30 rounded-full px-6 py-2.5 flex items-center gap-3 shadow-2xl">
+          <div className="bg-[#1A0B2E]/90 backdrop-blur-2xl border border-white/20 rounded-full px-6 py-2.5 flex items-center gap-3 shadow-2xl">
             {syncing ? (
-               <>
-                 <RefreshCw size={14} className="animate-spin text-white" />
-                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Syncing Data...</span>
-               </>
+               <><RefreshCw size={14} className="animate-spin text-white" /><span className="text-[10px] font-black text-white uppercase tracking-widest">Syncing...</span></>
             ) : (
-               <>
-                 <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
-                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Offline Mode</span>
-               </>
+               <><div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></div><span className="text-[10px] font-black text-white uppercase tracking-widest">Offline Storage Mode</span></>
             )}
           </div>
         </div>
@@ -433,7 +320,7 @@ const App: React.FC = () => {
         teacher={teacher}
       >
         {view === 'home' && (
-          isSuperAdmin ? <AdminPanel lang={lang} currentView="list" dataVersion={dataVersion} /> : 
+          madrasah?.is_super_admin ? <AdminPanel lang={lang} currentView="list" dataVersion={dataVersion} /> : 
           <Home 
             onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} 
             lang={lang} 
@@ -443,77 +330,16 @@ const App: React.FC = () => {
           />
         )}
         
-        {view === 'classes' && (
-          <Classes 
-            onClassClick={(cls) => { setSelectedClass(cls); setView('students'); }} 
-            lang={lang} 
-            madrasah={madrasah} 
-            dataVersion={dataVersion} 
-            triggerRefresh={triggerRefresh} 
-            readOnly={!!teacher && !teacher.permissions.can_manage_classes} 
-          />
-        )}
-
-        {view === 'students' && selectedClass && (
-          <Students 
-            selectedClass={selectedClass} 
-            onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} 
-            onAddClick={() => { setSelectedStudent(null); setIsEditing(false); setView('student-form'); }} 
-            onBack={() => setView('classes')} 
-            lang={lang} 
-            dataVersion={dataVersion} 
-            triggerRefresh={triggerRefresh}
-            canAdd={!teacher || teacher.permissions.can_manage_students}
-            canSendSMS={!teacher || (teacher.permissions.can_send_sms || teacher.permissions.can_send_free_sms)}
-            teacher={teacher}
-            madrasahId={madrasah?.id}
-            onNavigateToWallet={() => setView('wallet-sms')}
-          />
-        )}
-
-        {view === 'student-details' && selectedStudent && (
-          <StudentDetails 
-            student={selectedStudent} 
-            onEdit={() => { setIsEditing(true); setView('student-form'); }} 
-            onBack={() => setView(selectedClass ? 'students' : 'home')} 
-            lang={lang} 
-            readOnly={!!teacher && !teacher.permissions.can_manage_students} 
-            madrasahId={madrasah?.id}
-            triggerRefresh={triggerRefresh}
-          />
-        )}
-
-        {view === 'student-form' && (
-          <StudentForm 
-            student={selectedStudent} 
-            madrasah={madrasah} 
-            defaultClassId={selectedClass?.id} 
-            isEditing={isEditing} 
-            onSuccess={() => { triggerRefresh(); setView(selectedClass ? 'students' : 'home'); }} 
-            onCancel={() => setView(selectedStudent ? 'student-details' : (selectedClass ? 'students' : 'home'))} 
-            lang={lang} 
-          />
-        )}
-
+        {view === 'classes' && <Classes onClassClick={(cls) => { setSelectedClass(cls); setView('students'); }} lang={lang} madrasah={madrasah} dataVersion={dataVersion} triggerRefresh={triggerRefresh} readOnly={!!teacher && !teacher.permissions.can_manage_classes} />}
+        {view === 'students' && selectedClass && <Students selectedClass={selectedClass} onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} onAddClick={() => { setSelectedStudent(null); setIsEditing(false); setView('student-form'); }} onBack={() => setView('classes')} lang={lang} dataVersion={dataVersion} triggerRefresh={triggerRefresh} canAdd={!teacher || teacher.permissions.can_manage_students} canSendSMS={!teacher || (teacher.permissions.can_send_sms || teacher.permissions.can_send_free_sms)} teacher={teacher} madrasahId={madrasah?.id} onNavigateToWallet={() => setView('wallet-sms')} />}
+        {view === 'student-details' && selectedStudent && <StudentDetails student={selectedStudent} onEdit={() => { setIsEditing(true); setView('student-form'); }} onBack={() => setView(selectedClass ? 'students' : 'home')} lang={lang} readOnly={!!teacher && !teacher.permissions.can_manage_students} madrasahId={madrasah?.id} triggerRefresh={triggerRefresh} />}
+        {view === 'student-form' && <StudentForm student={selectedStudent} madrasah={madrasah} defaultClassId={selectedClass?.id} isEditing={isEditing} onSuccess={() => { triggerRefresh(); setView(selectedClass ? 'students' : 'home'); }} onCancel={() => setView(selectedStudent ? 'student-details' : (selectedClass ? 'students' : 'home'))} lang={lang} />}
         {view === 'wallet-sms' && <WalletSMS lang={lang} madrasah={madrasah} triggerRefresh={triggerRefresh} dataVersion={dataVersion} />}
         {view === 'teachers' && <Teachers lang={lang} madrasah={madrasah} onBack={() => setView('account')} />}
         {view === 'data-management' && <DataManagement lang={lang} madrasah={madrasah} onBack={() => setView('account')} triggerRefresh={triggerRefresh} />}
-        
-        {view === 'account' && (
-          <Account 
-            lang={lang} 
-            setLang={(l) => { setLang(l); localStorage.setItem('app_lang', l); }} 
-            onProfileUpdate={() => triggerRefresh()} 
-            setView={setView} 
-            isSuperAdmin={isSuperAdmin} 
-            initialMadrasah={madrasah} 
-            onLogout={logout}
-            isTeacher={!!teacher}
-          />
-        )}
-
-        {isSuperAdmin && view === 'admin-dashboard' && <AdminPanel lang={lang} currentView="dashboard" dataVersion={dataVersion} />}
-        {isSuperAdmin && view === 'admin-approvals' && <AdminPanel lang={lang} currentView="approvals" dataVersion={dataVersion} />}
+        {view === 'account' && <Account lang={lang} setLang={(l) => { setLang(l); localStorage.setItem('app_lang', l); }} onProfileUpdate={() => triggerRefresh()} setView={setView} isSuperAdmin={madrasah?.is_super_admin} initialMadrasah={madrasah} onLogout={logout} isTeacher={!!teacher} />}
+        {madrasah?.is_super_admin && view === 'admin-dashboard' && <AdminPanel lang={lang} currentView="dashboard" dataVersion={dataVersion} />}
+        {madrasah?.is_super_admin && view === 'admin-approvals' && <AdminPanel lang={lang} currentView="approvals" dataVersion={dataVersion} />}
         
         <div className="mt-8 mb-4 text-center opacity-30 select-none">
            <span className="text-[9px] font-black text-white uppercase tracking-widest">{APP_VERSION}</span>
