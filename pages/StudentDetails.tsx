@@ -93,7 +93,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
         
         <div className="flex flex-col items-center text-center">
            <div className="w-28 h-28 bg-gradient-to-br from-[#F2EBFF] to-white rounded-[2.2rem] flex items-center justify-center text-[#A179FF] border-4 border-white shadow-xl overflow-hidden mb-4">
-             {student.photo_url ? <img src={student.photo_url} className="w-full h-full object-cover" /> : <UserIcon size={48} strokeWidth={2.5} />}
+             <UserIcon size={48} strokeWidth={2.5} />
            </div>
            
            <h2 className="text-xl font-black text-[#2E0B5E] font-noto tracking-tight leading-tight mb-2">{student.student_name}</h2>

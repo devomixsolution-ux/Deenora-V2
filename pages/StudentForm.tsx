@@ -24,12 +24,9 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
   const [phone, setPhone] = useState(student?.guardian_phone || '');
   const [phone2, setPhone2] = useState(student?.guardian_phone_2 || '');
   const [classId, setClassId] = useState(student?.class_id || defaultClassId || '');
-  const [photoUrl, setPhotoUrl] = useState(student?.photo_url || '');
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [showClassModal, setShowClassModal] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [errorModal, setErrorModal] = useState<{show: boolean, message: string}>({show: false, message: ''});
 
@@ -48,44 +45,6 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
         setClasses(sorted);
         offlineApi.setCache('classes', sorted);
       }
-    }
-  };
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !madrasah) return;
-
-    if (!navigator.onLine) {
-      setErrorModal({ show: true, message: lang === 'bn' ? 'ছবি আপলোড করতে ইন্টারনেটে যুক্ত থাকুন' : 'Stay online to upload photo' });
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `std_${madrasah.id}_${Date.now()}.${fileExt}`;
-      const filePath = `students/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('madrasah-assets')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        if (uploadError.message.includes('Bucket not found')) {
-          throw new Error(lang === 'bn' ? 'স্টোরেজ বাকেট পাওয়া যায়নি। অনুগ্রহ করে SQL রান করুন।' : 'Storage bucket not found. Please run the SQL setup.');
-        }
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('madrasah-assets')
-        .getPublicUrl(filePath);
-
-      setPhotoUrl(publicUrl);
-    } catch (err: any) {
-      setErrorModal({ show: true, message: err.message || (lang === 'bn' ? `ব্যর্থ হয়েছে` : `Upload failed`) });
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -117,7 +76,6 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
         roll: roll ? parseInt(roll) : null,
         guardian_phone: phone.trim(),
         guardian_phone_2: phone2.trim() || null,
-        photo_url: photoUrl || null,
         class_id: classId,
         madrasah_id: madrasah.id
       };
@@ -161,14 +119,6 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white/95 backdrop-blur-xl p-8 rounded-[3rem] border-2 border-[#8D30F4]/5 shadow-2xl space-y-8">
-          <div className="flex flex-col items-center gap-4">
-            <div onClick={() => fileInputRef.current?.click()} className="w-28 h-28 rounded-[2.2rem] bg-[#F2EBFF] border-4 border-dashed border-[#8D30F4]/20 flex items-center justify-center text-[#8D30F4]/40 overflow-hidden relative active:scale-95 transition-all shadow-inner">
-              {uploading ? <Loader2 className="animate-spin text-[#8D30F4]" /> : photoUrl ? <img src={photoUrl} className="w-full h-full object-cover" /> : <Camera size={35} />}
-            </div>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-            <p className="text-[10px] font-black text-[#8D30F4] uppercase tracking-[0.2em]">{photoUrl ? 'Change Photo' : 'Add Photo'}</p>
-          </div>
-
           <div className="space-y-6">
              <div className="space-y-2">
                <label className="flex items-center gap-2 text-[10px] font-black text-[#4B168A] uppercase tracking-widest px-2"><UserIcon size={14} className="text-[#8D30F4]" /> {t('student_name', lang)}</label>
