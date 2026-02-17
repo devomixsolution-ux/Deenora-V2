@@ -2,43 +2,17 @@
 import { createClient } from '@supabase/supabase-js';
 import { Student, Madrasah } from './types';
 
-const supabaseUrl = 'https://uiqzzuqpgwziufghmqee.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcXp6dXFwZ3d6aXVmZ2htcWVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNDk2MzMsImV4cCI6MjA4NjgyNTYzM30.CpkKwO1_49WjM-jQk9H08elomIESQBzV9hUmiT218sg';
+const supabaseUrl = 'https://lowaqxzwjlewnkqjpeoz.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvd2FxeHp3amxld25rcWpwZW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3NTU2NzYsImV4cCI6MjA4NjMzMTY3Nn0.O4Q0pfol014_k-IrmAZjPBRUii4oSL4OphOIzKldeoM';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: window.localStorage,
-    storageKey: 'madrasah_auth_token'
+    detectSessionInUrl: false,
+    storage: window.localStorage
   }
 });
-
-/**
- * Normalizes phone numbers to strictly 13 digits: 8801XXXXXXXXX
- */
-const normalizePhone = (phone: string): string => {
-  let p = phone.replace(/\D/g, ''); 
-  // If starts with 01, add 88
-  if (p.startsWith('0') && p.length === 11) {
-    return `88${p}`;
-  }
-  // If starts with 1 (no leading 0), add 880
-  if (p.startsWith('1') && p.length === 10) {
-    return `880${p}`;
-  }
-  // If already starts with 880, ensure it's 13 digits
-  if (p.startsWith('880')) {
-    return p.slice(0, 13);
-  }
-  // If starts with 88 but not 880 (e.g. 881...), treat carefully
-  if (p.startsWith('88') && p.length === 12) {
-    return `880${p.slice(2)}`;
-  }
-  
-  return p;
-};
 
 export const smsApi = {
   getGlobalSettings: async () => {
@@ -60,11 +34,11 @@ export const smsApi = {
       if (!data) return defaults;
       
       return {
-        reve_api_key: (data.reve_api_key || defaults.reve_api_key).trim(),
-        reve_secret_key: (data.reve_secret_key || defaults.reve_secret_key).trim(),
-        reve_caller_id: (data.reve_caller_id || defaults.reve_caller_id).trim(),
+        reve_api_key: data.reve_api_key || defaults.reve_api_key,
+        reve_secret_key: data.reve_secret_key || defaults.reve_secret_key,
+        reve_caller_id: data.reve_caller_id || defaults.reve_caller_id,
         bkash_number: data.bkash_number || defaults.bkash_number,
-        reve_client_id: (data.reve_client_id || defaults.reve_client_id).trim()
+        reve_client_id: data.reve_client_id || defaults.reve_client_id
       };
     } catch (e) {
       return { 
@@ -85,11 +59,11 @@ export const smsApi = {
     ]);
 
     const mData = mRes.data;
-    if (!mData) throw new Error("মাদরাসা প্রোফাইল লোড করা যায়নি।");
+    if (!mData) throw new Error("Could not load madrasah profile.");
     
     const balance = mData.sms_balance || 0;
     if (balance < students.length) {
-      throw new Error(`ব্যালেন্স পর্যাপ্ত নয়। প্রয়োজন: ${students.length}, আছে: ${balance}`);
+      throw new Error(`Insufficient SMS balance. Needed: ${students.length}, Available: ${balance}`);
     }
 
     // 2. Deduct balance via RPC
@@ -99,50 +73,41 @@ export const smsApi = {
       p_message: message
     });
 
-    if (rpcError) throw new Error("ব্যালেন্স আপডেট করতে সমস্যা হয়েছে: " + rpcError.message);
-    if (rpcData && rpcData.success === false) throw new Error(rpcData.error || "ট্রানজ্যাকশন সফল হয়নি।");
+    if (rpcError) throw new Error("Balance Update Failed: " + rpcError.message);
+    if (rpcData && rpcData.success === false) throw new Error(rpcData.error || "Transaction denied");
 
-    // 3. Prepare credentials
-    const apiKey = (mData.reve_api_key && mData.reve_api_key.trim() !== '') ? mData.reve_api_key.trim() : global.reve_api_key;
-    const secretKey = (mData.reve_secret_key && mData.reve_secret_key.trim() !== '') ? mData.reve_secret_key.trim() : global.reve_secret_key;
-    const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id.trim() : global.reve_caller_id;
-    const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id.trim() : global.reve_client_id;
+    // 3. Send SMS to gateway
+    const apiKey = (mData.reve_api_key && mData.reve_api_key.trim() !== '') ? mData.reve_api_key : global.reve_api_key;
+    const secretKey = (mData.reve_secret_key && mData.reve_secret_key.trim() !== '') ? mData.reve_secret_key : global.reve_secret_key;
+    const callerId = (mData.reve_caller_id && mData.reve_caller_id.trim() !== '') ? mData.reve_caller_id : global.reve_caller_id;
+    // client_id support can be added to URL params if required by REVE SMS version
+    const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id : global.reve_client_id;
 
-    // 4. Batch Processing
-    // We send in chunks of 15 to ensure URL length safety and avoid provider limits
-    const chunkSize = 15; 
-    const batches: any[][] = [];
+    const phoneList = students.map(s => {
+      let p = s.guardian_phone.replace(/\D/g, '');
+      return p.startsWith('88') ? p : `88${p}`;
+    }).join(',');
+
+    const contentArray = [{
+      callerID: callerId,
+      toUser: phoneList,
+      messageContent: message
+    }];
+
+    let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&content=${encodeURIComponent(JSON.stringify(contentArray))}`;
     
-    for (let i = 0; i < students.length; i += chunkSize) {
-      const chunk = students.slice(i, i + chunkSize);
-      // Format: Individual entries per recipient for better delivery
-      const batchContent = chunk.map(s => ({
-        callerID: callerId,
-        toUser: normalizePhone(s.guardian_phone),
-        messageContent: message
-      }));
-      batches.push(batchContent);
+    // Add clientid if provided
+    if (clientId) {
+      apiUrl += `&clientid=${clientId}`;
     }
 
-    // 5. Fire SMS Requests
-    const sendPromises = batches.map(async (batchData) => {
-      // type=3 is mandatory for Unicode/Bengali characters
-      let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(batchData))}`;
-      
-      if (clientId) {
-        apiUrl += `&clientid=${clientId}`;
-      }
-
-      try {
-        // no-cors is standard for frontend-triggered gateway pings where we don't control the server's headers
-        await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
-      } catch (err) {
-        console.warn("SMS batch failed to trigger:", err);
-      }
-    });
-
-    await Promise.all(sendPromises);
-    return { success: true };
+    try {
+      await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
+      return { success: true };
+    } catch (err) {
+      console.warn("SMS triggered, but response not readable (CORS):", err);
+      return { success: true };
+    }
   },
 
   sendDirect: async (phone: string, message: string, madrasahId?: string) => {
@@ -160,25 +125,21 @@ export const smsApi = {
         .maybeSingle();
         
       if (data) {
-        if (data.reve_api_key && data.reve_api_key.trim() !== '') apiKey = data.reve_api_key.trim();
-        if (data.reve_secret_key && data.reve_secret_key.trim() !== '') secretKey = data.reve_secret_key.trim();
-        if (data.reve_caller_id && data.reve_caller_id.trim() !== '') callerId = data.reve_caller_id.trim();
-        if (data.reve_client_id && data.reve_client_id.trim() !== '') clientId = data.reve_client_id.trim();
+        if (data.reve_api_key && data.reve_api_key.trim() !== '') apiKey = data.reve_api_key;
+        if (data.reve_secret_key && data.reve_secret_key.trim() !== '') secretKey = data.reve_secret_key;
+        if (data.reve_caller_id && data.reve_caller_id.trim() !== '') callerId = data.reve_caller_id;
+        if (data.reve_client_id && data.reve_client_id.trim() !== '') clientId = data.reve_client_id;
       }
     }
 
-    const target = normalizePhone(phone);
-    
-    // Using /sendtext for single direct messages (more reliable for single pings)
-    let apiUrl = `https://smpp.revesms.com:7790/sendtext?apikey=${apiKey}&secretkey=${secretKey}&callerID=${callerId}&toUser=${target}&messageContent=${encodeURIComponent(message)}&type=3`;
+    const p = phone.replace(/\D/g, '');
+    const target = p.startsWith('88') ? p : `88${p}`;
+    const content = [{ callerID: callerId, toUser: target, messageContent: message }];
+    let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&content=${encodeURIComponent(JSON.stringify(content))}`;
     
     if (clientId) apiUrl += `&clientid=${clientId}`;
     
-    try { 
-      await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' }); 
-    } catch (e) {
-      console.warn("Direct SMS failed to trigger:", e);
-    }
+    try { await fetch(apiUrl, { mode: 'no-cors' }); } catch (e) {}
   }
 };
 
