@@ -198,9 +198,21 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
 
       <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-50 divide-y divide-slate-50 overflow-hidden mx-1">
         {!isTeacher && (
-          <button onClick={() => setIsEditingProfile(true)} className="w-full p-8 flex items-center justify-between group">
-            <div className="flex items-center gap-6"><div className="w-12 h-12 bg-purple-50 text-[#8D30F4] rounded-2xl flex items-center justify-center"><Edit3 size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">{t('profile_settings', lang)}</h5><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('branding', lang)}</p></div></div><ChevronRight size={22} className="text-slate-200" />
-          </button>
+          <>
+            <button onClick={() => setIsEditingProfile(true)} className="w-full p-8 flex items-center justify-between group">
+              <div className="flex items-center gap-6"><div className="w-12 h-12 bg-purple-50 text-[#8D30F4] rounded-2xl flex items-center justify-center"><Edit3 size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">{t('profile_settings', lang)}</h5><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('branding', lang)}</p></div></div><ChevronRight size={22} className="text-slate-200" />
+            </button>
+            {!isSuperAdmin && (
+              <>
+                <button onClick={() => setView('teachers')} className="w-full p-8 flex items-center justify-between group">
+                  <div className="flex items-center gap-6"><div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center"><Users size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">{t('manage_teachers', lang)}</h5><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Staff Access</p></div></div><ChevronRight size={22} className="text-slate-200" />
+                </button>
+                <button onClick={() => setView('data-management')} className="w-full p-8 flex items-center justify-between group">
+                  <div className="flex items-center gap-6"><div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center"><Database size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">{t('backup_restore', lang)}</h5><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Excel Tools</p></div></div><ChevronRight size={22} className="text-slate-200" />
+                </button>
+              </>
+            )}
+          </>
         )}
         <div className="w-full p-8 flex items-center justify-between group"><div className="flex items-center gap-6"><div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center"><Languages size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-[#2E0B5E] font-noto">{t('language', lang)}</h5><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('change_lang', lang)}</p></div></div><div className="flex p-1.5 bg-slate-50 rounded-2xl border border-slate-100"><button onClick={() => setLang('bn')} className={`px-5 py-2.5 rounded-xl text-[10px] font-black ${lang === 'bn' ? 'bg-white text-[#8D30F4] shadow-sm' : 'text-slate-400'}`}>বাংলা</button><button onClick={() => setLang('en')} className={`px-5 py-2.5 rounded-xl text-[10px] font-black ${lang === 'en' ? 'bg-white text-[#8D30F4] shadow-sm' : 'text-slate-400'}`}>ENG</button></div></div>
         <button onClick={onLogout} className="w-full p-8 flex items-center justify-between group"><div className="flex items-center gap-6"><div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center"><LogOut size={22} /></div><div className="text-left"><h5 className="text-[17px] font-black text-red-600 font-noto">{t('logout', lang)}</h5><p className="text-[10px] font-bold text-red-300 uppercase tracking-widest mt-1">{t('logout_system', lang)}</p></div></div><ChevronRight size={22} className="text-red-100" /></button>
