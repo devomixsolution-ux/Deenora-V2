@@ -227,7 +227,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
       </form>
 
       {showClassModal && (
-        <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[500] flex items-center justify-center p-8 animate-in fade-in duration-300">
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
           <div className="bg-white w-full max-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(141,48,244,0.2)] border border-[#8D30F4]/5 relative animate-in zoom-in-95 duration-300">
             <button onClick={() => setShowClassModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-[#8D30F4] hover:scale-110 transition-all"><X size={26} strokeWidth={3} /></button>
             
@@ -254,7 +254,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, madrasah, defaultCla
       )}
 
       {errorModal.show && (
-         <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[600] flex items-center justify-center p-8 animate-in fade-in duration-300">
+         <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-sm p-10 rounded-[3.5rem] shadow-[0_40px_100px_rgba(239,68,68,0.2)] text-center space-y-6 animate-in zoom-in-95 duration-300 border border-red-50">
                <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
                  <AlertCircle size={40} />

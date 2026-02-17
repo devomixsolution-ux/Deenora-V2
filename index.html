@@ -97,6 +97,19 @@
         -webkit-overflow-scrolling: touch;
         height: 100%;
       }
+
+      /* Modal Overlay Fix for transformed parents */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100dvh;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
     </style>
   <script type="importmap">
 {

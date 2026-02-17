@@ -303,9 +303,9 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
         </div>
       )}
 
-      {/* Premium Status Modal - Updated Design */}
+      {/* Premium Status Modal - Updated with .modal-overlay fix */}
       {statusModal.show && (
-        <div className="fixed inset-0 bg-[#080A12]/40 backdrop-blur-2xl z-[2000] flex items-center justify-center p-8 animate-in fade-in duration-300">
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_50px_120px_rgba(0,0,0,0.15)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
              
              {/* Dynamic Icon Section */}
