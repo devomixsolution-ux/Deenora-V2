@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, Edit3, User as UserIcon, Smartphone, PhoneCall, UserCheck, MessageCircle, Hash, BookOpen, Phone, Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
 import { Student, Language } from '../types';
 import { supabase } from '../supabase';
@@ -164,8 +165,8 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
         </div>
       </div>
 
-      {showDeleteConfirm && (
-        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
+      {showDeleteConfirm && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-300">
              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
                 <AlertTriangle size={40} />
@@ -195,7 +196,8 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
                 </button>
              </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

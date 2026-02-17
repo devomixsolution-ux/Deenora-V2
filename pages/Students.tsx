@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, Plus, Search, CheckCircle2, MessageSquare, X, BookOpen, ChevronDown, Check, PhoneCall, Smartphone, Loader2, ListChecks, MessageCircle, Phone, AlertCircle, AlertTriangle, Zap } from 'lucide-react';
 import { supabase, offlineApi, smsApi } from '../supabase';
 import { Class, Student, Language, Teacher } from '../types';
@@ -303,12 +304,10 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
         </div>
       )}
 
-      {/* Premium Status Modal - Updated with .modal-overlay fix */}
-      {statusModal.show && (
-        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl p-8 animate-in fade-in duration-300">
+      {statusModal.show && createPortal(
+        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-[0_50px_120px_rgba(0,0,0,0.15)] border border-slate-50 animate-in zoom-in-95 duration-500 relative overflow-hidden">
              
-             {/* Dynamic Icon Section */}
              <div className="relative mb-8">
                 <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto border-4 shadow-inner relative z-10 transition-all duration-700 ${
                   statusModal.type === 'success' ? 'bg-green-50 text-green-500 border-green-100' : 
@@ -319,7 +318,6 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                    statusModal.type === 'balance' ? <Zap size={54} strokeWidth={2.5} fill="currentColor" /> :
                    <AlertCircle size={54} strokeWidth={2.5} />}
                 </div>
-                {/* Background pulse for errors/balance */}
                 {statusModal.type !== 'success' && (
                   <div className={`absolute inset-0 rounded-full animate-ping opacity-20 mx-auto w-24 h-24 ${statusModal.type === 'balance' ? 'bg-orange-400' : 'bg-red-400'}`}></div>
                 )}
@@ -356,7 +354,8 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                 )}
              </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
