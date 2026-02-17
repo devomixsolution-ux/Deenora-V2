@@ -17,26 +17,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 /**
  * Normalizes phone numbers to strictly 13 digits: 8801XXXXXXXXX
+ * This is the standard format required by BD SMS Gateways.
  */
 const normalizePhone = (phone: string): string => {
-  let p = phone.replace(/\D/g, ''); 
-  // If starts with 01, add 88
+  let p = phone.replace(/\D/g, ''); // Remove all non-digits
+  
+  // If it's already 13 digits starting with 880, return it
+  if (p.length === 13 && p.startsWith('880')) return p;
+  
+  // If it starts with 01 (11 digits), prepend 88
   if (p.startsWith('0') && p.length === 11) {
     return `88${p}`;
   }
-  // If starts with 1 (no leading 0), add 880
+  
+  // If it starts with 1 (10 digits), prepend 880
   if (p.startsWith('1') && p.length === 10) {
     return `880${p}`;
   }
-  // If already starts with 880, ensure it's 13 digits
+
+  // If it starts with 880 but not 13 digits, trim or pad (rare case)
   if (p.startsWith('880')) {
     return p.slice(0, 13);
   }
-  // If starts with 88 but not 880 (e.g. 881...), treat carefully
-  if (p.startsWith('88') && p.length === 12) {
-    return `880${p.slice(2)}`;
-  }
-  
+
   return p;
 };
 
@@ -92,7 +95,7 @@ export const smsApi = {
       throw new Error(`ব্যালেন্স পর্যাপ্ত নয়। প্রয়োজন: ${students.length}, আছে: ${balance}`);
     }
 
-    // 2. Deduct balance via RPC
+    // 2. Deduct balance via RPC (Database transaction)
     const { data: rpcData, error: rpcError } = await supabase.rpc('send_bulk_sms_rpc', {
       p_madrasah_id: madrasahId,
       p_student_ids: students.map(s => s.id),
@@ -109,32 +112,36 @@ export const smsApi = {
     const clientId = (mData.reve_client_id && mData.reve_client_id.trim() !== '') ? mData.reve_client_id.trim() : global.reve_client_id;
 
     // 4. Batch Processing
-    // We send in chunks of 15 to ensure URL length safety and avoid provider limits
+    // REVE SMS handles comma separated numbers in one content object efficiently.
+    // We send in chunks of 15 to keep the URL length safe.
     const chunkSize = 15; 
-    const batches: any[][] = [];
+    const batches: string[] = [];
     
     for (let i = 0; i < students.length; i += chunkSize) {
       const chunk = students.slice(i, i + chunkSize);
-      // Format: Individual entries per recipient for better delivery
-      const batchContent = chunk.map(s => ({
-        callerID: callerId,
-        toUser: normalizePhone(s.guardian_phone),
-        messageContent: message
-      }));
-      batches.push(batchContent);
+      const phoneList = chunk.map(s => normalizePhone(s.guardian_phone)).join(',');
+      batches.push(phoneList);
     }
 
     // 5. Fire SMS Requests
-    const sendPromises = batches.map(async (batchData) => {
+    const sendPromises = batches.map(async (toUsers) => {
+      // Documentation suggests for multi-contact with SAME content:
+      // content=[{"callerID":"...","toUser":"8801...,8801...","messageContent":"..."}]
+      const content = [{
+        callerID: callerId,
+        toUser: toUsers,
+        messageContent: message
+      }];
+
       // type=3 is mandatory for Unicode/Bengali characters
-      let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(batchData))}`;
+      let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(content))}`;
       
       if (clientId) {
         apiUrl += `&clientid=${clientId}`;
       }
 
       try {
-        // no-cors is standard for frontend-triggered gateway pings where we don't control the server's headers
+        // We use fetch with no-cors to trigger the gateway request.
         await fetch(apiUrl, { mode: 'no-cors', cache: 'no-cache' });
       } catch (err) {
         console.warn("SMS batch failed to trigger:", err);
