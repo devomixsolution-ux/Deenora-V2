@@ -22,10 +22,9 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   
-  // Deletion States
+  // Deletion States (Only Clear All is kept)
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchRecentCalls = async (isManual = false) => {
     if (!madrasahId) {
@@ -123,28 +122,6 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
       }
     } catch (e) {
       console.error("recordCall Exception:", e);
-    }
-  };
-
-  const deleteSingleCall = async (id: string) => {
-    if (!madrasahId) return;
-    try {
-      const { error } = await supabase
-        .from('recent_calls')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      setRecentCalls(prev => prev.filter(c => c.id !== id));
-      const cached = offlineApi.getCache('recent_calls');
-      if (cached) {
-        offlineApi.setCache('recent_calls', cached.filter((c: any) => c.id !== id));
-      }
-    } catch (err) {
-      console.error("Delete call error:", err);
-    } finally {
-      setDeleteId(null);
     }
   };
 
@@ -321,12 +298,6 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
                   </div>
                 </div>
                 <div className="flex items-center gap-6 shrink-0 ml-2">
-                   <button 
-                     onClick={(e) => { e.stopPropagation(); setDeleteId(call.id); }} 
-                     className="w-9 h-9 bg-red-50 text-red-500 rounded-lg flex items-center justify-center active:scale-90 transition-all border border-red-100/50"
-                   >
-                     <Trash2 size={16} />
-                   </button>
                    <div onClick={(e) => { e.stopPropagation(); call.students && initiateNormalCall(call.students.id, call.students.guardian_phone) }} className="w-10 h-10 bg-[#8D30F4]/10 text-[#8D30F4] rounded-xl flex items-center justify-center shadow-sm active:scale-90 transition-all border border-[#8D30F4]/10">
                      <Phone size={20} fill="currentColor" />
                    </div>
@@ -377,33 +348,6 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerR
                   className="w-full py-4 bg-slate-100 text-[#2E0B5E] rounded-full font-black text-xs uppercase tracking-widest active:scale-95 transition-all"
                 >
                   {t('cancel_btn', lang)}
-                </button>
-              </div>
-           </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Single Delete Confirmation */}
-      {deleteId && createPortal(
-        <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(0,0,0,0.1)] text-center space-y-6 animate-in zoom-in-95 duration-300">
-              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
-                 <Trash2 size={32} />
-              </div>
-              <h3 className="text-lg font-black text-slate-800 font-noto">এই কল হিস্ট্রি মুছুন?</h3>
-              <div className="flex flex-col gap-2 pt-2">
-                <button 
-                  onClick={() => deleteSingleCall(deleteId)} 
-                  className="w-full py-4 bg-red-500 text-white font-black rounded-full shadow-lg active:scale-95 transition-all text-xs uppercase tracking-widest"
-                >
-                  ডিলিট করুন
-                </button>
-                <button 
-                  onClick={() => setDeleteId(null)} 
-                  className="w-full py-3 bg-slate-50 text-slate-400 font-black rounded-full text-[10px] uppercase active:scale-95 transition-all"
-                >
-                  বাতিল
                 </button>
               </div>
            </div>
