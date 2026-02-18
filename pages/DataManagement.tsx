@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { ArrowLeft, Download, Upload, Loader2, CheckCircle2, Table, AlertTriangle, FileUp, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '../supabase';
@@ -142,18 +143,23 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
           if (rows.length === 0) throw new Error("File is empty");
 
           let successCount = 0;
+          let skippedCount = 0;
           let total = rows.length;
 
           for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             const className = String(row.A || '').trim();
-            const roll = parseInt(row.B) || null;
+            const rollValue = parseInt(row.B);
+            const roll = isNaN(rollValue) ? null : rollValue;
             const studentName = String(row.C || '').trim();
             const guardianName = String(row.D || '').trim();
             const phone = String(row.E || '').trim();
             const phone2 = String(row.F || '').trim();
 
-            if (!studentName || !phone || !className) continue;
+            if (!studentName || !phone || !className) {
+              skippedCount++;
+              continue;
+            }
 
             let classId = '';
             const { data: existingClass } = await supabase
@@ -171,8 +177,33 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
                 .insert({ madrasah_id: madrasah.id, class_name: className })
                 .select('id')
                 .single();
-              if (classError) continue;
+              if (classError) {
+                skippedCount++;
+                continue;
+              }
               classId = newClass.id;
+            }
+
+            // Check if student already exists in this class with same name and roll
+            let studentQuery = supabase
+              .from('students')
+              .select('id')
+              .eq('madrasah_id', madrasah.id)
+              .eq('class_id', classId)
+              .eq('student_name', studentName);
+            
+            if (roll === null) {
+              studentQuery = studentQuery.is('roll', null);
+            } else {
+              studentQuery = studentQuery.eq('roll', roll);
+            }
+
+            const { data: existingStudent } = await studentQuery.maybeSingle();
+
+            if (existingStudent) {
+              skippedCount++;
+              setProgress(Math.round(((i + 1) / total) * 100));
+              continue;
             }
 
             const { error: studentError } = await supabase
@@ -187,13 +218,21 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
                 guardian_phone_2: phone2 || null
               });
 
-            if (!studentError) successCount++;
+            if (!studentError) {
+              successCount++;
+            } else {
+              skippedCount++;
+            }
             setProgress(Math.round(((i + 1) / total) * 100));
           }
 
+          const msg = lang === 'bn' 
+            ? `${successCount} জন ছাত্র আপলোড হয়েছে, ${skippedCount} জন ইতিমধ্যে ছিল বা ত্রুটির কারণে বাদ পড়েছে।` 
+            : `${successCount} students imported, ${skippedCount} skipped (already exists or error).`;
+
           setStatus({ 
             type: 'success', 
-            message: lang === 'bn' ? `${successCount} জন ছাত্র সফলভাবে আপলোড হয়েছে` : `${successCount} students imported successfully` 
+            message: msg
           });
           triggerRefresh();
         } catch (err: any) {

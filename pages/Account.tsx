@@ -187,11 +187,27 @@ const Account: React.FC<AccountProps> = ({ lang, setLang, onProfileUpdate, setVi
             </div>
           </div>
           <div className="space-y-6">
-             <h2 className="text-[28px] sm:text-[34px] font-black text-[#2E0B5E] font-noto tracking-tight leading-tight px-4">{madrasah.name}</h2>
+             {/* Fixed Madrasah Name Issue: Changed font-black to font-bold and reset shadow to fix "ghosting/distortion" */}
+             <h2 className="text-[26px] sm:text-[32px] font-bold text-[#2E0B5E] font-noto tracking-tight leading-snug px-4 break-words [text-shadow:none]">{madrasah.name}</h2>
+             
              <div className="flex flex-col items-center gap-2">
-                <div className="inline-flex px-6 py-2 bg-[#F2EBFF] text-[#8D30F4] rounded-2xl border border-[#8D30F4]/10"><ShieldCheck size={14} className="mr-2" /><span className="text-[11px] font-black uppercase tracking-[0.1em]">{t('sender_id', lang)}: {madrasah.reve_caller_id || 'DEFAULT'}</span></div>
+                <div className="inline-flex px-5 py-1.5 bg-[#F2EBFF] text-[#8D30F4] rounded-2xl border border-[#8D30F4]/10">
+                   <ShieldCheck size={14} className="mr-2 shrink-0" />
+                   <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{t('sender_id', lang)}: {madrasah.reve_caller_id || 'DEFAULT'}</span>
+                </div>
              </div>
-             <div className="pt-4"><div onClick={() => copyToClipboard(madrasah.id)} className="bg-slate-50/70 p-5 rounded-[2.5rem] border border-slate-100 flex items-center gap-5 active:scale-[0.98] cursor-pointer"><Fingerprint size={24} className="text-[#8D30F4]" /><div className="flex-1 text-left min-w-0"><p className="text-[9px] font-black text-slate-400 uppercase mb-1.5">{t('madrasah_uuid', lang)}</p><p className="text-[12px] font-black text-[#8D30F4] truncate">{madrasah.id}</p></div>{copiedId ? <Check size={22} className="text-green-500" /> : <Copy size={20} className="text-slate-200" />}</div></div>
+
+             <div className="pt-4">
+                <div onClick={() => copyToClipboard(madrasah.id)} className="bg-slate-50/70 p-5 rounded-[2.5rem] border border-slate-100 flex items-center gap-5 active:scale-[0.98] cursor-pointer">
+                   <Fingerprint size={24} className="text-[#8D30F4] shrink-0" />
+                   <div className="flex-1 text-left min-w-0">
+                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('madrasah_uuid', lang)}</p>
+                      <p className="text-[12px] font-black text-[#8D30F4] truncate">{madrasah.id}</p>
+                   </div>
+                   {copiedId ? <Check size={22} className="text-green-500 shrink-0" /> : <Copy size={20} className="text-slate-200 shrink-0" />}
+                </div>
+             </div>
+
              {!isSuperAdmin && (
               <div className="grid grid-cols-2 gap-4 mt-8 pt-4">
                   <div className="bg-white rounded-3xl p-5 border border-slate-50 shadow-md"><Users size={20} className="mx-auto mb-2 text-purple-500" /><h4 className="text-lg font-black">{stats.students}</h4><p className="text-[8px] uppercase font-black text-slate-400">{t('students', lang)}</p></div>
