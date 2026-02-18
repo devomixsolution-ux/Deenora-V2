@@ -188,34 +188,34 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
         ) : (
           <div className="space-y-3.5 px-1">
             {teachers.map(t => (
-              <div key={t.id} className="bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/50 shadow-xl relative overflow-hidden group">
-                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                       <div className="w-16 h-16 bg-[#F2EBFF] text-[#8D30F4] rounded-[1.5rem] flex items-center justify-center border border-[#8D30F4]/10 shadow-inner shrink-0">
-                          <UserIcon size={30} />
+              <div key={t.id} className="bg-white/95 backdrop-blur-md p-4 sm:p-6 rounded-[2.5rem] border border-white/50 shadow-xl relative overflow-hidden group">
+                 <div className="flex items-start sm:items-center justify-between mb-4 gap-2">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                       <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#F2EBFF] text-[#8D30F4] rounded-[1.2rem] sm:rounded-[1.5rem] flex items-center justify-center border border-[#8D30F4]/10 shadow-inner shrink-0">
+                          <UserIcon size={24} className="sm:size-[30px]" />
                        </div>
-                       <div className="min-w-0">
-                          <h3 className="text-[17px] font-black text-[#2E0B5E] font-noto truncate leading-tight">{t.name}</h3>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Phone: {t.phone}</p>
+                       <div className="min-w-0 flex-1 pr-1">
+                          <h3 className="text-[15px] sm:text-[17px] font-black text-[#2E0B5E] font-noto line-clamp-1 leading-tight">{t.name}</h3>
+                          <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 truncate">Ph: {t.phone}</p>
                        </div>
                     </div>
-                    <div className="flex gap-2">
-                       <button onClick={() => { setEditId(t.id); setName(t.name); setPhone(t.phone); setCode(t.login_code); setPerms(t.permissions); setIsModalOpen(true); }} className="w-10 h-10 bg-[#F2EBFF] text-[#8D30F4] rounded-xl flex items-center justify-center shadow-sm active:scale-90 transition-all border border-[#8D30F4]/5"><Edit3 size={18} /></button>
-                       <button onClick={() => setShowDeleteConfirm(t)} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shadow-sm active:scale-90 transition-all border border-red-100/50"><Trash2 size={18} /></button>
+                    <div className="flex gap-1.5 shrink-0">
+                       <button onClick={() => { setEditId(t.id); setName(t.name); setPhone(t.phone); setCode(t.login_code); setPerms(t.permissions); setIsModalOpen(true); }} className="w-9 h-9 sm:w-10 sm:h-10 bg-[#F2EBFF] text-[#8D30F4] rounded-xl flex items-center justify-center shadow-sm active:scale-90 transition-all border border-[#8D30F4]/5"><Edit3 size={16} /></button>
+                       <button onClick={() => setShowDeleteConfirm(t)} className="w-9 h-9 sm:w-10 sm:h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shadow-sm active:scale-90 transition-all border border-red-100/50"><Trash2 size={16} /></button>
                     </div>
                  </div>
 
                  <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-50">
-                    <div className={`px-3.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${t.permissions?.can_manage_students ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-300'}`}>
+                    <div className={`px-3 sm:px-3.5 py-1.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 ${t.permissions?.can_manage_students ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-300'}`}>
                       <Smartphone size={10} strokeWidth={3} /> Students
                     </div>
-                    <div className={`px-3.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${t.permissions?.can_manage_classes ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-300'}`}>
+                    <div className={`px-3 sm:px-3.5 py-1.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 ${t.permissions?.can_manage_classes ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-300'}`}>
                       <Layers size={10} strokeWidth={3} /> Classes
                     </div>
-                    <div className={`px-3.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${t.permissions?.can_send_sms ? 'bg-orange-50 text-orange-600' : 'bg-slate-50 text-slate-300'}`}>
+                    <div className={`px-3 sm:px-3.5 py-1.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 ${t.permissions?.can_send_sms ? 'bg-orange-50 text-orange-600' : 'bg-slate-50 text-slate-300'}`}>
                       <MessageSquare size={10} strokeWidth={3} /> System SMS
                     </div>
-                    <div className={`px-3.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${t.permissions?.can_send_free_sms ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-300'}`}>
+                    <div className={`px-3 sm:px-3.5 py-1.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 ${t.permissions?.can_send_free_sms ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-300'}`}>
                       <MessageCircle size={10} strokeWidth={3} /> Free SMS
                     </div>
                  </div>
