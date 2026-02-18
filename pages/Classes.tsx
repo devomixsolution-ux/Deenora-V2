@@ -138,19 +138,16 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
 
         <div className="grid grid-cols-1 gap-4">
           {classes.map(cls => (
-            <div key={cls.id} onClick={() => onClassClick(cls)} className="bg-white/95 backdrop-blur-md p-5 rounded-[2.2rem] border border-white/40 flex items-center justify-between active:scale-[0.98] transition-all group shadow-lg relative overflow-hidden">
-              <div className="flex items-center gap-4 min-w-0 flex-1">
-                <div className="w-14 h-14 bg-[#8D30F4]/10 rounded-2xl flex items-center justify-center text-[#8D30F4] shrink-0 border border-[#8D30F4]/10 shadow-inner">
-                  <BookOpen size={24} />
+            <div key={cls.id} onClick={() => onClassClick(cls)} className="bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-[2.2rem] border border-white/40 flex items-center justify-between active:scale-[0.98] transition-all group shadow-lg relative overflow-hidden">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#8D30F4]/10 rounded-2xl flex items-center justify-center text-[#8D30F4] shrink-0 border border-[#8D30F4]/10 shadow-inner">
+                  <BookOpen size={20} className="sm:size-6" />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 pr-2">
                   <div className="flex items-center gap-2">
-                    {cls.sort_order !== undefined && cls.sort_order !== null && (
-                      <span className="text-[10px] font-black bg-[#8D30F4] text-white px-2 py-0.5 rounded-md">
-                        #{cls.sort_order}
-                      </span>
-                    )}
-                    <h3 className="font-black text-[#2E0B5E] text-[18px] font-noto truncate leading-tight tracking-tight">{cls.class_name}</h3>
+                    <h3 className="font-black text-[#2E0B5E] text-[16px] sm:text-[18px] font-noto line-clamp-2 leading-tight tracking-tight break-words">
+                      {cls.class_name}
+                    </h3>
                   </div>
                   <div className="flex items-center gap-1.5 mt-1">
                     <Users size={12} className="text-[#8D30F4]/60" />
@@ -158,20 +155,20 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-3">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {!readOnly && (
                   <>
                     <button onClick={(e) => { e.stopPropagation(); setNewClassName(cls.class_name); setNewSortOrder(cls.sort_order?.toString() || ''); setEditingClass(cls); setShowModal(true); }} 
-                      className="w-10 h-10 bg-[#F2EBFF] text-[#8D30F4] rounded-xl flex items-center justify-center border border-[#8D30F4]/10 active:scale-90 transition-all shadow-sm">
-                      <Edit3 size={16} />
+                      className="w-9 h-9 sm:w-10 sm:h-10 bg-[#F2EBFF] text-[#8D30F4] rounded-xl flex items-center justify-center border border-[#8D30F4]/10 active:scale-90 transition-all shadow-sm">
+                      <Edit3 size={14} className="sm:size-4" />
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(cls); }} 
-                      className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center border border-red-100 active:scale-90 transition-all shadow-sm">
-                      <Trash2 size={16} />
+                      className="w-9 h-9 sm:w-10 sm:h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center border border-red-100 active:scale-90 transition-all shadow-sm">
+                      <Trash2 size={14} className="sm:size-4" />
                     </button>
                   </>
                 )}
-                <ChevronRight className="text-[#A179FF]/40 group-hover:text-[#8D30F4] transition-colors ml-0.5" size={20} strokeWidth={3} />
+                <ChevronRight className="text-[#A179FF]/40 group-hover:text-[#8D30F4] transition-colors ml-0.5" size={18} strokeWidth={3} />
               </div>
             </div>
           ))}
@@ -232,7 +229,7 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
 
       {showDeleteConfirm && createPortal(
         <div className="modal-overlay bg-[#080A12]/40 backdrop-blur-2xl animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(239,68,68,0.2)] border border-red-50 text-center space-y-6 animate-in zoom-in-95 duration-500">
              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-100">
                 <AlertTriangle size={40} />
              </div>
