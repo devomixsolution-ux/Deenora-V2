@@ -328,10 +328,12 @@ const App: React.FC = () => {
           madrasah?.is_super_admin ? <AdminPanel lang={lang} currentView="list" dataVersion={dataVersion} /> : 
           <Home 
             onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} 
+            setView={navigateTo}
             lang={lang} 
             dataVersion={dataVersion} 
             triggerRefresh={triggerRefresh}
             madrasahId={madrasah?.id}
+            teacher={teacher}
           />
         )}
         

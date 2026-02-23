@@ -4,6 +4,7 @@ import { X, Send, MessageSquare, Loader2, AlertCircle, CheckCircle2, ChevronDown
 import { t } from '../translations';
 import { Language, Student, Madrasah, SMSTemplate } from '../types';
 import { supabase, smsApi } from '../supabase';
+import { getSMSStats } from '../utils/smsUtils';
 
 interface SMSModalProps {
   students: Student[];
@@ -67,7 +68,22 @@ const SMSModal: React.FC<SMSModalProps> = ({ students, madrasah, lang, onClose, 
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 z-[510] max-h-48 overflow-y-auto p-1">{templates.map(tmp => (<button key={tmp.id} onClick={() => { setMessage(tmp.body); setShowTemplateDropdown(false); }} className="w-full text-left px-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded-lg"><p className="text-[8px] font-black text-[#8D30F4] uppercase mb-0.5">{tmp.title}</p><p className="text-xs font-bold text-slate-500 truncate">{tmp.body}</p></button>))}</div>
             )}
           </div>
-          <div className="space-y-1.5"><div className="flex justify-between items-center px-1"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">বার্তা লিখুন</label><span className="text-[10px] font-black text-[#8D30F4] uppercase tracking-widest">{message.length}/160</span></div><textarea className="w-full h-28 px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-slate-700 font-medium text-sm focus:border-[#8D30F4]/30 resize-none shadow-inner leading-relaxed" placeholder="মেসেজ লিখুন..." value={message} onChange={(e) => setMessage(e.target.value)} maxLength={160} /></div>
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center px-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">বার্তা লিখুন</label>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-[#8D30F4] uppercase tracking-widest">{getSMSStats(message).segments} SMS ({message.length}/{getSMSStats(message).maxLength})</span>
+                {getSMSStats(message).isUnicode && <span className="text-[7px] font-black bg-[#8D30F4] text-white px-1.5 py-0.5 rounded uppercase">Unicode</span>}
+              </div>
+            </div>
+            <textarea 
+              className="w-full h-28 px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-slate-700 font-medium text-sm focus:border-[#8D30F4]/30 resize-none shadow-inner leading-relaxed" 
+              placeholder="মেসেজ লিখুন..." 
+              value={message} 
+              onChange={(e) => setMessage(e.target.value)} 
+              maxLength={getSMSStats(message).maxLength} 
+            />
+          </div>
           {status === 'error' && <div className="bg-red-50 p-3 rounded-xl flex items-center gap-2 text-red-500 text-[10px] font-black border border-red-100 animate-in slide-in-from-top-2"><AlertCircle size={14} className="shrink-0" /> {errorMsg}</div>}
           <button onClick={handleSend} disabled={sending || !message.trim()} className="w-full py-4 premium-btn text-white font-black rounded-2xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3 text-sm uppercase tracking-widest">{sending ? <Loader2 className="animate-spin" size={20} /> : 'বার্তা পাঠান'}</button>
         </div>

@@ -3,18 +3,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, Clock, User as UserIcon, RefreshCw, PhoneCall, X, MessageCircle, Phone, AlertCircle, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase, offlineApi } from '../supabase';
-import { Student, RecentCall, Language } from '../types';
+import { Student, RecentCall, Language, View, Teacher } from '../types';
 import { t } from '../translations';
 
 interface HomeProps {
   onStudentClick: (student: Student) => void;
+  setView: (view: View) => void;
   lang: Language;
   dataVersion: number;
   triggerRefresh: () => void;
   madrasahId?: string;
+  teacher?: Teacher | null;
 }
 
-const Home: React.FC<HomeProps> = ({ onStudentClick, lang, dataVersion, triggerRefresh, madrasahId }) => {
+const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion, triggerRefresh, madrasahId, teacher }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [recentCalls, setRecentCalls] = useState<RecentCall[]>([]);

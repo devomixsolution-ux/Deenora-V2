@@ -6,6 +6,7 @@ import { supabase, smsApi } from '../supabase';
 import { SMSTemplate, Language, Madrasah, Class, Student, Transaction } from '../types';
 import { t } from '../translations';
 import { sortMadrasahClasses } from './Classes';
+import { getSMSStats } from '../utils/smsUtils';
 
 interface WalletSMSProps {
   lang: Language;
@@ -317,9 +318,24 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
               <div className="space-y-4">
                 <h4 className="text-[11px] font-black text-[#2E0B5E] uppercase tracking-widest px-1">৩. বার্তা লিখুন</h4>
                 <div className="relative">
-                  <textarea className="w-full h-32 px-5 py-5 bg-slate-50 border-2 border-slate-100 rounded-[1.8rem] text-[#2E0B5E] font-bold outline-none font-noto resize-none" placeholder="বার্তা..." value={bulkMessage} onChange={(e) => setBulkMessage(e.target.value)} maxLength={160} />
-                  <div className="absolute bottom-4 right-5 bg-white px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">
-                     <span className="text-[10px] font-black text-[#8D30F4]">{bulkMessage.length}/160</span>
+                  <textarea 
+                    className="w-full h-32 px-5 py-5 bg-slate-50 border-2 border-slate-100 rounded-[1.8rem] text-[#2E0B5E] font-bold outline-none font-noto resize-none" 
+                    placeholder="বার্তা..." 
+                    value={bulkMessage} 
+                    onChange={(e) => setBulkMessage(e.target.value)} 
+                    maxLength={getSMSStats(bulkMessage).maxLength} 
+                  />
+                  <div className="absolute bottom-4 right-5 flex items-center gap-2">
+                    <div className="bg-white px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm flex items-center gap-1.5">
+                       <span className="text-[10px] font-black text-[#8D30F4]">{bulkMessage.length}/{getSMSStats(bulkMessage).maxLength}</span>
+                       <div className="w-[1px] h-3 bg-slate-100"></div>
+                       <span className="text-[10px] font-black text-[#8D30F4]">{getSMSStats(bulkMessage).segments} SMS</span>
+                    </div>
+                    {getSMSStats(bulkMessage).isUnicode && (
+                      <div className="bg-[#8D30F4] text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-sm">
+                        Unicode
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -503,8 +519,20 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                     <input type="text" className="w-full h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 font-black text-[#2E0B5E] font-noto outline-none focus:border-[#8D30F4]/30" placeholder="যেমন: উপস্থিতি" value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} />
                  </div>
                  <div className="space-y-2 px-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-1">মেসেজ বডি</label>
-                    <textarea className="w-full h-32 bg-slate-50 border-2 border-slate-100 rounded-[1.8rem] px-6 py-4 font-bold text-slate-600 font-noto outline-none focus:border-[#8D30F4]/30 resize-none" placeholder="আপনার মেসেজ এখানে লিখুন..." value={tempBody} onChange={(e) => setTempBody(e.target.value)} />
+                    <div className="flex justify-between items-center px-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">মেসেজ বডি</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">{getSMSStats(tempBody).segments} SMS ({tempBody.length}/{getSMSStats(tempBody).maxLength})</span>
+                        {getSMSStats(tempBody).isUnicode && <span className="text-[7px] font-black bg-[#8D30F4] text-white px-1.5 py-0.5 rounded uppercase">Unicode</span>}
+                      </div>
+                    </div>
+                    <textarea 
+                      className="w-full h-32 bg-slate-50 border-2 border-slate-100 rounded-[1.8rem] px-6 py-4 font-bold text-slate-600 font-noto outline-none focus:border-[#8D30F4]/30 resize-none" 
+                      placeholder="আপনার মেসেজ এখানে লিখুন..." 
+                      value={tempBody} 
+                      onChange={(e) => setTempBody(e.target.value)} 
+                      maxLength={getSMSStats(tempBody).maxLength}
+                    />
                  </div>
                  <button onClick={handleSaveTemplate} disabled={isSaving || !tempTitle || !tempBody} className="w-full h-16 premium-btn text-white font-black rounded-full shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all text-lg">
                     {isSaving ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> {editingId ? 'আপডেট করুন' : 'সেভ করুন'}</>}

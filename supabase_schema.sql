@@ -76,3 +76,6 @@ EXCEPTION WHEN OTHERS THEN
     RETURN json_build_object('success', false, 'error', SQLERRM);
 END;
 $$ LANGUAGE plpgsql;
+
+-- ৬. ইনডেক্স তৈরি (পারফরম্যান্স এর জন্য)
+CREATE INDEX IF NOT EXISTS idx_students_madrasah ON public.students(madrasah_id);
