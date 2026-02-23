@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, Clock, User as UserIcon, RefreshCw, PhoneCall, X, MessageCircle, Phone, AlertCircle, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase, offlineApi } from '../supabase';
-import { Student, RecentCall, Language, View, Teacher } from '../types';
+import { Student, RecentCall, Language, View, Teacher, Madrasah } from '../types';
 import { t } from '../translations';
 
 interface HomeProps {
@@ -14,9 +14,10 @@ interface HomeProps {
   triggerRefresh: () => void;
   madrasahId?: string;
   teacher?: Teacher | null;
+  madrasah?: Madrasah | null;
 }
 
-const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion, triggerRefresh, madrasahId, teacher }) => {
+const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion, triggerRefresh, madrasahId, teacher, madrasah }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [recentCalls, setRecentCalls] = useState<RecentCall[]>([]);
@@ -193,6 +194,16 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion,
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Welcome Message */}
+      <div className="px-1">
+        <h1 className="text-2xl font-black text-white font-noto leading-tight drop-shadow-md">
+          {lang === 'bn' ? 'আস-সালামু আলাইকুম' : 'As-Salamu Alaikum'}
+        </h1>
+        <p className="text-[11px] font-black text-white/70 uppercase tracking-[0.2em] mt-1 drop-shadow-sm">
+          {teacher ? teacher.name : (madrasah?.name || (lang === 'bn' ? 'মাদরাসা কন্টাক্ট' : 'Madrasah Contact'))}
+        </p>
+      </div>
+
       <div className="relative z-20 group px-1">
         <div className="absolute -inset-1 bg-gradient-to-r from-[#8D30F4] to-[#A179FF] rounded-[2.2rem] blur opacity-10 group-focus-within:opacity-30 transition duration-500"></div>
         <div className="relative flex items-center">

@@ -334,6 +334,7 @@ const App: React.FC = () => {
             triggerRefresh={triggerRefresh}
             madrasahId={madrasah?.id}
             teacher={teacher}
+            madrasah={madrasah}
           />
         )}
         
