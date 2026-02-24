@@ -6,7 +6,6 @@ import { supabase, smsApi } from '../supabase';
 import { SMSTemplate, Language, Madrasah, Class, Student, Transaction } from '../types';
 import { t } from '../translations';
 import { sortMadrasahClasses } from './Classes';
-import { getSMSStats } from '../utils/smsUtils';
 
 interface WalletSMSProps {
   lang: Language;
@@ -323,19 +322,14 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                     placeholder="বার্তা..." 
                     value={bulkMessage} 
                     onChange={(e) => setBulkMessage(e.target.value)} 
-                    maxLength={getSMSStats(bulkMessage).maxLength} 
+                    maxLength={500} 
                   />
                   <div className="absolute bottom-4 right-5 flex items-center gap-2">
                     <div className="bg-white px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm flex items-center gap-1.5">
-                       <span className="text-[10px] font-black text-[#8D30F4]">{bulkMessage.length}/{getSMSStats(bulkMessage).maxLength}</span>
+                       <span className="text-[10px] font-black text-[#8D30F4]">{bulkMessage.length}/500</span>
                        <div className="w-[1px] h-3 bg-slate-100"></div>
-                       <span className="text-[10px] font-black text-[#8D30F4]">{getSMSStats(bulkMessage).segments} SMS</span>
+                       <span className="text-[10px] font-black text-[#8D30F4]">{Math.ceil(bulkMessage.length / 70)} SMS</span>
                     </div>
-                    {getSMSStats(bulkMessage).isUnicode && (
-                      <div className="bg-[#8D30F4] text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-sm">
-                        Unicode
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -522,8 +516,7 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                     <div className="flex justify-between items-center px-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">মেসেজ বডি</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">{getSMSStats(tempBody).segments} SMS ({tempBody.length}/{getSMSStats(tempBody).maxLength})</span>
-                        {getSMSStats(tempBody).isUnicode && <span className="text-[7px] font-black bg-[#8D30F4] text-white px-1.5 py-0.5 rounded uppercase">Unicode</span>}
+                        <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">{Math.ceil(tempBody.length / 70)} SMS ({tempBody.length}/500)</span>
                       </div>
                     </div>
                     <textarea 
@@ -531,7 +524,7 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                       placeholder="আপনার মেসেজ এখানে লিখুন..." 
                       value={tempBody} 
                       onChange={(e) => setTempBody(e.target.value)} 
-                      maxLength={getSMSStats(tempBody).maxLength}
+                      maxLength={500}
                     />
                  </div>
                  <button onClick={handleSaveTemplate} disabled={isSaving || !tempTitle || !tempBody} className="w-full h-16 premium-btn text-white font-black rounded-full shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all text-lg">

@@ -4,7 +4,6 @@ import { X, Send, MessageSquare, Loader2, AlertCircle, CheckCircle2, ChevronDown
 import { t } from '../translations';
 import { Language, Student, Madrasah, SMSTemplate } from '../types';
 import { supabase, smsApi } from '../supabase';
-import { getSMSStats } from '../utils/smsUtils';
 
 interface SMSModalProps {
   students: Student[];
@@ -72,8 +71,7 @@ const SMSModal: React.FC<SMSModalProps> = ({ students, madrasah, lang, onClose, 
             <div className="flex justify-between items-center px-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">বার্তা লিখুন</label>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-[#8D30F4] uppercase tracking-widest">{getSMSStats(message).segments} SMS ({message.length}/{getSMSStats(message).maxLength})</span>
-                {getSMSStats(message).isUnicode && <span className="text-[7px] font-black bg-[#8D30F4] text-white px-1.5 py-0.5 rounded uppercase">Unicode</span>}
+                <span className="text-[10px] font-black text-[#8D30F4] uppercase tracking-widest">{Math.ceil(message.length / 70)} SMS ({message.length}/500)</span>
               </div>
             </div>
             <textarea 
@@ -81,7 +79,7 @@ const SMSModal: React.FC<SMSModalProps> = ({ students, madrasah, lang, onClose, 
               placeholder="মেসেজ লিখুন..." 
               value={message} 
               onChange={(e) => setMessage(e.target.value)} 
-              maxLength={getSMSStats(message).maxLength} 
+              maxLength={500} 
             />
           </div>
           {status === 'error' && <div className="bg-red-50 p-3 rounded-xl flex items-center gap-2 text-red-500 text-[10px] font-black border border-red-100 animate-in slide-in-from-top-2"><AlertCircle size={14} className="shrink-0" /> {errorMsg}</div>}
