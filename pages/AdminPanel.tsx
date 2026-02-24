@@ -367,6 +367,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ lang, currentView = 'list', dat
                   <h4 className="text-2xl font-black text-[#2E0B5E]">{madrasahs.filter(m => m.is_active).length}</h4>
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Active Portals</p>
                 </div>
+                <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-orange-500/10 text-orange-500 rounded-2xl flex items-center justify-center mb-2 shadow-inner">
+                    <GraduationCap size={20} />
+                  </div>
+                  <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalStudents}</h4>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Students</p>
+                </div>
+                <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-purple-500/10 text-purple-500 rounded-2xl flex items-center justify-center mb-2 shadow-inner">
+                    <Layers size={20} />
+                  </div>
+                  <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalClasses}</h4>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Classes</p>
+                </div>
+                <div className="bg-white/95 p-5 rounded-[2.2rem] border border-white shadow-xl flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-pink-500/10 text-pink-500 rounded-2xl flex items-center justify-center mb-2 shadow-inner">
+                    <Users size={20} />
+                  </div>
+                  <h4 className="text-2xl font-black text-[#2E0B5E]">{globalStats.totalTeachers}</h4>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Teachers</p>
+                </div>
                 
                 <div className="bg-white/95 p-6 rounded-[2.5rem] border border-white shadow-xl flex flex-col items-center text-center col-span-2 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
