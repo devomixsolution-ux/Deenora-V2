@@ -145,16 +145,45 @@ const App: React.FC = () => {
       }
 
       // 2. Check for existing Supabase session
-      const { data: { session: currentSession } } = await (supabase.auth as any).getSession();
-      
-      if (currentSession) {
-        setSession(currentSession);
-        if (cachedProfile) setMadrasah(cachedProfile);
+      try {
+        const { data: { session: currentSession } } = await (supabase.auth as any).getSession();
         
-        await fetchMadrasahProfile(currentSession.user.id);
-        setLoading(false);
-      } else {
-        // Only if absolutely no session is found, show login
+        if (currentSession) {
+          setSession(currentSession);
+          // Backup session for WebView persistence
+          localStorage.setItem('deenora_admin_session', JSON.stringify(currentSession));
+          
+          if (cachedProfile) setMadrasah(cachedProfile);
+          await fetchMadrasahProfile(currentSession.user.id);
+          setLoading(false);
+        } else {
+          // 3. Fallback for WebView: check manual session backup
+          const backupSession = localStorage.getItem('deenora_admin_session');
+          if (backupSession) {
+            try {
+              const parsedBackup = JSON.parse(backupSession);
+              setSession(parsedBackup);
+              if (cachedProfile) setMadrasah(cachedProfile);
+              // Try to refresh in background if online
+              if (navigator.onLine) fetchMadrasahProfile(parsedBackup.user.id);
+              setLoading(false);
+              return;
+            } catch (e) {
+              localStorage.removeItem('deenora_admin_session');
+            }
+          }
+          
+          // Only if absolutely no session is found, show login
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+        // If error (e.g. network), try to use cached data to stay logged in
+        const backupSession = localStorage.getItem('deenora_admin_session');
+        if (backupSession && cachedProfile) {
+          setSession(JSON.parse(backupSession));
+          setMadrasah(cachedProfile);
+        }
         setLoading(false);
       }
     };
@@ -170,8 +199,10 @@ const App: React.FC = () => {
         setTeacher(null);
         offlineApi.removeCache('profile');
         localStorage.removeItem('teacher_session');
+        localStorage.removeItem('deenora_admin_session');
       } else if (session) {
         setSession(session);
+        localStorage.setItem('deenora_admin_session', JSON.stringify(session));
         fetchMadrasahProfile(session.user.id);
       }
     });
@@ -193,6 +224,7 @@ const App: React.FC = () => {
 
   const logout = async () => {
     localStorage.removeItem('teacher_session');
+    localStorage.removeItem('deenora_admin_session');
     offlineApi.removeCache('profile');
     if (session) await (supabase.auth as any).signOut();
     window.location.reload();
