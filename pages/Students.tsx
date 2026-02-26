@@ -195,8 +195,8 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                   </button>
                 )}
                 <button onClick={() => { setIsSelectionMode(!isSelectionMode); if (isSelectionMode) setSelectedIds(new Set()); }}
-                  className={`shrink-0 w-10 h-10 rounded-2xl transition-all active:scale-95 border flex items-center justify-center ${isSelectionMode ? 'bg-white text-[#8D30F4] border-white shadow-xl' : 'bg-white/20 text-white border-white/20'}`}>
-                  {isSelectionMode ? <X size={18} strokeWidth={3} /> : <CheckCircle2 size={18} strokeWidth={2.5} />}
+                  className={`shrink-0 h-10 px-3.5 rounded-2xl transition-all active:scale-95 border flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-wider ${isSelectionMode ? 'bg-white text-[#8D30F4] border-white shadow-xl' : 'bg-white/20 text-white border-white/20'}`}>
+                  {isSelectionMode ? <X size={18} strokeWidth={3} /> : <><CheckCircle2 size={18} strokeWidth={2.5} /> {t('sms', lang)}</>}
                 </button>
               </>
             )}
@@ -278,7 +278,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                 <button 
                   onClick={handlePremiumSMS} 
                   disabled={sending || !selectedTemplate} 
-                  className={`h-[48px] rounded-full flex items-center justify-center gap-2 font-black text-[10px] tracking-tight uppercase shadow-lg transition-all ${selectedTemplate ? 'bg-[#8D30F4] text-white' : 'bg-slate-100 text-slate-300 opacity-50'}`}
+                  className={`h-[48px] rounded-full flex items-center justify-center gap-2 font-black text-[12px] tracking-wider uppercase shadow-lg transition-all ${selectedTemplate ? 'bg-[#8D30F4] text-white' : 'bg-slate-100 text-slate-300 opacity-50'}`}
                 >
                   {sending ? <Loader2 className="animate-spin" size={16} /> : <MessageSquare size={16} fill="currentColor" />} 
                   {t('sms', lang)}
@@ -288,7 +288,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                 <button 
                   onClick={handleNativeSMS} 
                   disabled={!selectedTemplate} 
-                  className={`h-[48px] rounded-full flex items-center justify-center gap-2 font-black text-[10px] tracking-tight uppercase shadow-lg transition-all ${selectedTemplate ? 'bg-[#1A0B2E] text-white' : 'bg-slate-100 text-slate-300 opacity-50'}`}
+                  className={`h-[48px] rounded-full flex items-center justify-center gap-2 font-black text-[12px] tracking-wider uppercase shadow-lg transition-all ${selectedTemplate ? 'bg-[#1A0B2E] text-white' : 'bg-slate-100 text-slate-300 opacity-50'}`}
                 >
                   <Smartphone size={16} fill="currentColor" /> {t('sms', lang)}
                 </button>
