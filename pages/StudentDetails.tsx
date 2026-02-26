@@ -160,6 +160,13 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onEdit, onBack
                      <p className="text-[15px] font-black text-[#2E0B5E] tracking-tight">{student.guardian_phone_2}</p>
                   </div>
                 </div>
+                <button 
+                  onClick={async () => { await recordCall(student.guardian_phone_2); window.location.href = `tel:${student.guardian_phone_2}`; }} 
+                  className="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-blue-500 shrink-0 shadow-sm border border-blue-100 active:scale-90 transition-all"
+                  aria-label="Call guardian 2"
+                >
+                  <Phone size={18} />
+                </button>
              </div>
            )}
         </div>
