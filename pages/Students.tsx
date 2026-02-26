@@ -221,16 +221,15 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
           <div key={student.id} onClick={() => isSelectionMode ? toggleSelection(student.id) : onStudentClick(student)}
             className={`p-3 rounded-[1.2rem] border backdrop-blur-md transition-all flex items-center justify-between shadow-md relative overflow-hidden ${isSelectionMode && selectedIds.has(student.id) ? 'bg-white text-[#8D30F4] border-[#8D30F4] scale-[1.01]' : 'bg-white/95 border-white/40 active:scale-[0.98]'}`}>
             <div className="flex items-center gap-3.5 flex-1 min-w-0">
-              {isSelectionMode ? (
-                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border-2 shrink-0 transition-all ${selectedIds.has(student.id) ? 'bg-[#8D30F4] text-white border-[#8D30F4]' : 'bg-slate-50 border-slate-100 text-slate-200'}`}>
-                  <CheckCircle2 size={22} fill={selectedIds.has(student.id) ? "white" : "none"} />
-                </div>
-              ) : (
-                <div className="w-11 h-11 rounded-2xl flex flex-col items-center justify-center border shrink-0 bg-[#F2EBFF] border-[#8D30F4]/10 text-[#8D30F4] shadow-inner">
-                  <span className="text-[7px] font-black opacity-40 uppercase leading-none">{t('roll', lang)}</span>
-                  <span className="text-base font-black leading-none mt-1">{student.roll || '-'}</span>
-                </div>
-              )}
+              <div className="w-11 h-11 rounded-2xl flex flex-col items-center justify-center border shrink-0 bg-[#F2EBFF] border-[#8D30F4]/10 text-[#8D30F4] shadow-inner relative">
+                <span className="text-[7px] font-black opacity-40 uppercase leading-none">{t('roll', lang)}</span>
+                <span className="text-base font-black leading-none mt-1">{student.roll || '-'}</span>
+                {isSelectionMode && (
+                  <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all ${selectedIds.has(student.id) ? 'bg-[#8D30F4] text-white border-[#8D30F4]' : 'bg-slate-50 border-slate-100 text-slate-200'}`}>
+                    <Check size={12} strokeWidth={3} />
+                  </div>
+                )}
+              </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-black text-[#2E0B5E] text-[16px] font-noto truncate leading-tight">{student.student_name}</h3>
                 <p className="text-[9px] font-black text-[#A179FF] truncate uppercase tracking-widest mt-0.5">{student.guardian_name || '-'}</p>
@@ -282,7 +281,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                   className={`h-[48px] rounded-full flex items-center justify-center gap-2 font-black text-[10px] tracking-tight uppercase shadow-lg transition-all ${selectedTemplate ? 'bg-[#8D30F4] text-white' : 'bg-slate-100 text-slate-300 opacity-50'}`}
                 >
                   {sending ? <Loader2 className="animate-spin" size={16} /> : <MessageSquare size={16} fill="currentColor" />} 
-                  {t('system_sms', lang)}
+                  {t('sms', lang)}
                 </button>
               )}
               {canSendFreeSMS && (
@@ -291,7 +290,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
                   disabled={!selectedTemplate} 
                   className={`h-[48px] rounded-full flex items-center justify-center gap-2 font-black text-[10px] tracking-tight uppercase shadow-lg transition-all ${selectedTemplate ? 'bg-[#1A0B2E] text-white' : 'bg-slate-100 text-slate-300 opacity-50'}`}
                 >
-                  <Smartphone size={16} fill="currentColor" /> {t('native_sms', lang)}
+                  <Smartphone size={16} fill="currentColor" /> {t('sms', lang)}
                 </button>
               )}
             </div>
