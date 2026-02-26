@@ -11,7 +11,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storage: window.localStorage,
-    storageKey: 'madrasah_auth_token',
     flowType: 'pkce' // More secure and robust for web apps
   }
 });
