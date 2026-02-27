@@ -27,6 +27,64 @@ interface ClassesProps {
   readOnly?: boolean;
 }
 
+// Memoized Class Card for performance
+const ClassCard = React.memo(({ 
+  cls, 
+  onClassClick, 
+  onEdit, 
+  onDelete, 
+  readOnly, 
+  lang 
+}: { 
+  cls: Class & { student_count?: number }, 
+  onClassClick: (cls: Class) => void, 
+  onEdit: (cls: Class) => void, 
+  onDelete: (cls: Class) => void, 
+  readOnly?: boolean, 
+  lang: Language 
+}) => (
+  <div 
+    onClick={() => onClassClick(cls)} 
+    className="bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-[2.2rem] border border-white/40 flex items-center justify-between active:scale-[0.98] transition-all group shadow-lg relative overflow-hidden will-change-transform"
+  >
+    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#8D30F4]/10 rounded-2xl flex items-center justify-center text-[#8D30F4] shrink-0 border border-[#8D30F4]/10 shadow-inner">
+        <BookOpen size={20} className="sm:size-6" />
+      </div>
+      <div className="min-w-0 flex-1 pr-2">
+        <div className="flex items-center gap-2">
+          <h3 className="font-black text-[#2E0B5E] text-[16px] sm:text-[18px] font-noto line-clamp-2 leading-tight tracking-tight break-words">
+            {cls.class_name}
+          </h3>
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          <Users size={12} className="text-[#8D30F4]/60" />
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">{cls.student_count || 0} {t('students_count', lang)}</p>
+        </div>
+      </div>
+    </div>
+    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      {!readOnly && (
+        <>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onEdit(cls); }} 
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#F2EBFF] text-[#8D30F4] rounded-xl flex items-center justify-center border border-[#8D30F4]/10 active:scale-90 transition-all shadow-sm"
+          >
+            <Edit3 size={14} className="sm:size-4" />
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(cls); }} 
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center border border-red-100 active:scale-90 transition-all shadow-sm"
+          >
+            <Trash2 size={14} className="sm:size-4" />
+          </button>
+        </>
+      )}
+      <ChevronRight className="text-[#A179FF]/40 group-hover:text-[#8D30F4] transition-colors ml-0.5" size={18} strokeWidth={3} />
+    </div>
+  </div>
+));
+
 const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVersion, triggerRefresh, readOnly }) => {
   const [classes, setClasses] = useState<(Class & { student_count?: number })[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,39 +196,15 @@ const Classes: React.FC<ClassesProps> = ({ onClassClick, lang, madrasah, dataVer
 
         <div className="grid grid-cols-1 gap-4">
           {classes.map(cls => (
-            <div key={cls.id} onClick={() => onClassClick(cls)} className="bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-[2.2rem] border border-white/40 flex items-center justify-between active:scale-[0.98] transition-all group shadow-lg relative overflow-hidden">
-              <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#8D30F4]/10 rounded-2xl flex items-center justify-center text-[#8D30F4] shrink-0 border border-[#8D30F4]/10 shadow-inner">
-                  <BookOpen size={20} className="sm:size-6" />
-                </div>
-                <div className="min-w-0 flex-1 pr-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-black text-[#2E0B5E] text-[16px] sm:text-[18px] font-noto line-clamp-2 leading-tight tracking-tight break-words">
-                      {cls.class_name}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Users size={12} className="text-[#8D30F4]/60" />
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">{cls.student_count || 0} {t('students_count', lang)}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                {!readOnly && (
-                  <>
-                    <button onClick={(e) => { e.stopPropagation(); setNewClassName(cls.class_name); setNewSortOrder(cls.sort_order?.toString() || ''); setEditingClass(cls); setShowModal(true); }} 
-                      className="w-9 h-9 sm:w-10 sm:h-10 bg-[#F2EBFF] text-[#8D30F4] rounded-xl flex items-center justify-center border border-[#8D30F4]/10 active:scale-90 transition-all shadow-sm">
-                      <Edit3 size={14} className="sm:size-4" />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(cls); }} 
-                      className="w-9 h-9 sm:w-10 sm:h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center border border-red-100 active:scale-90 transition-all shadow-sm">
-                      <Trash2 size={14} className="sm:size-4" />
-                    </button>
-                  </>
-                )}
-                <ChevronRight className="text-[#A179FF]/40 group-hover:text-[#8D30F4] transition-colors ml-0.5" size={18} strokeWidth={3} />
-              </div>
-            </div>
+            <ClassCard
+              key={cls.id}
+              cls={cls}
+              onClassClick={onClassClick}
+              onEdit={(cls) => { setNewClassName(cls.class_name); setNewSortOrder(cls.sort_order?.toString() || ''); setEditingClass(cls); setShowModal(true); }}
+              onDelete={setShowDeleteConfirm}
+              readOnly={readOnly}
+              lang={lang}
+            />
           ))}
         </div>
       </div>

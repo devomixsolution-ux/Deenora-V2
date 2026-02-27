@@ -1,18 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { supabase, offlineApi } from './supabase';
 import Auth from './pages/Auth';
 import Layout from './components/Layout';
-import Home from './pages/Home';
-import Classes from './pages/Classes';
-import Students from './pages/Students';
-import StudentDetails from './pages/StudentDetails';
-import StudentForm from './pages/StudentForm';
-import Account from './pages/Account';
-import AdminPanel from './pages/AdminPanel';
-import WalletSMS from './pages/WalletSMS';
-import DataManagement from './pages/DataManagement';
-import Teachers from './pages/Teachers';
+
+// Lazy load pages for better performance
+const Home = lazy(() => import('./pages/Home'));
+const Classes = lazy(() => import('./pages/Classes'));
+const Students = lazy(() => import('./pages/Students'));
+const StudentDetails = lazy(() => import('./pages/StudentDetails'));
+const StudentForm = lazy(() => import('./pages/StudentForm'));
+const Account = lazy(() => import('./pages/Account'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
+const WalletSMS = lazy(() => import('./pages/WalletSMS'));
+const DataManagement = lazy(() => import('./pages/DataManagement'));
+const Teachers = lazy(() => import('./pages/Teachers'));
+
 import { View, Class, Student, Language, Madrasah, Teacher } from './types';
 import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles, ShieldAlert, Phone, CloudOff, Layers, Fingerprint, SignalLow, PhoneCall } from 'lucide-react';
 import { t } from './translations';
@@ -36,9 +39,9 @@ const App: React.FC = () => {
 
   const APP_VERSION = "2.5.1-PREMIUM";
 
-  const triggerRefresh = () => {
+  const triggerRefresh = useCallback(() => {
     setDataVersion(prev => prev + 1);
-  };
+  }, []);
 
   useEffect(() => {
     const handleStatusChange = () => {
@@ -230,6 +233,17 @@ const App: React.FC = () => {
     window.location.reload();
   };
 
+  const navigateTo = useCallback((newView: View) => {
+    if (teacher) {
+      const perms = teacher.permissions;
+      if (newView === 'classes' && !perms.can_manage_classes && !perms.can_manage_students) return;
+      if (newView === 'wallet-sms' && !perms.can_send_sms) return;
+      if (['admin-panel', 'admin-dashboard', 'admin-approvals'].includes(newView)) return;
+    }
+    setDataVersion(prev => prev + 1);
+    setView(newView);
+  }, [teacher]);
+
   if (loading) {
     const messages = [
       lang === 'bn' ? 'সিকিউর কানেকশন তৈরি হচ্ছে...' : 'Establishing Secure Connection...',
@@ -324,17 +338,6 @@ const App: React.FC = () => {
     );
   }
 
-  const navigateTo = (newView: View) => {
-    if (teacher) {
-      const perms = teacher.permissions;
-      if (newView === 'classes' && !perms.can_manage_classes && !perms.can_manage_students) return;
-      if (newView === 'wallet-sms' && !perms.can_send_sms) return;
-      if (['admin-panel', 'admin-dashboard', 'admin-approvals'].includes(newView)) return;
-    }
-    triggerRefresh();
-    setView(newView);
-  };
-
   return (
     <div className="relative h-full w-full bg-transparent">
       {(!isOnline || syncing) && (
@@ -356,30 +359,36 @@ const App: React.FC = () => {
         madrasah={madrasah}
         teacher={teacher}
       >
-        {view === 'home' && (
-          madrasah?.is_super_admin ? <AdminPanel lang={lang} currentView="list" dataVersion={dataVersion} /> : 
-          <Home 
-            onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} 
-            setView={navigateTo}
-            lang={lang} 
-            dataVersion={dataVersion} 
-            triggerRefresh={triggerRefresh}
-            madrasahId={madrasah?.id}
-            teacher={teacher}
-            madrasah={madrasah}
-          />
-        )}
-        
-        {view === 'classes' && <Classes onClassClick={(cls) => { setSelectedClass(cls); setView('students'); }} lang={lang} madrasah={madrasah} dataVersion={dataVersion} triggerRefresh={triggerRefresh} readOnly={!!teacher && !teacher.permissions.can_manage_classes} />}
-        {view === 'students' && selectedClass && <Students selectedClass={selectedClass} onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} onAddClick={() => { setSelectedStudent(null); setIsEditing(false); setView('student-form'); }} onBack={() => setView('classes')} lang={lang} dataVersion={dataVersion} triggerRefresh={triggerRefresh} canAdd={!teacher || teacher.permissions.can_manage_students} canSendSMS={!teacher || (teacher.permissions.can_send_sms || teacher.permissions.can_send_free_sms)} teacher={teacher} madrasahId={madrasah?.id} onNavigateToWallet={() => setView('wallet-sms')} />}
-        {view === 'student-details' && selectedStudent && <StudentDetails student={selectedStudent} onEdit={() => { setIsEditing(true); setView('student-form'); }} onBack={() => setView(selectedClass ? 'students' : 'home')} lang={lang} readOnly={!!teacher && !teacher.permissions.can_manage_students} madrasahId={madrasah?.id} triggerRefresh={triggerRefresh} />}
-        {view === 'student-form' && <StudentForm student={selectedStudent} madrasah={madrasah} defaultClassId={selectedClass?.id} isEditing={isEditing} onSuccess={() => { triggerRefresh(); setView(selectedClass ? 'students' : 'home'); }} onCancel={() => setView(selectedStudent ? 'student-details' : (selectedClass ? 'students' : 'home'))} lang={lang} />}
-        {view === 'wallet-sms' && <WalletSMS lang={lang} madrasah={madrasah} triggerRefresh={triggerRefresh} dataVersion={dataVersion} />}
-        {view === 'teachers' && <Teachers lang={lang} madrasah={madrasah} onBack={() => setView('account')} />}
-        {view === 'data-management' && <DataManagement lang={lang} madrasah={madrasah} onBack={() => setView('account')} triggerRefresh={triggerRefresh} />}
-        {view === 'account' && <Account lang={lang} setLang={(l) => { setLang(l); localStorage.setItem('app_lang', l); }} onProfileUpdate={() => triggerRefresh()} setView={setView} isSuperAdmin={madrasah?.is_super_admin} initialMadrasah={madrasah} onLogout={logout} isTeacher={!!teacher} />}
-        {madrasah?.is_super_admin && view === 'admin-dashboard' && <AdminPanel lang={lang} currentView="dashboard" dataVersion={dataVersion} />}
-        {madrasah?.is_super_admin && view === 'admin-approvals' && <AdminPanel lang={lang} currentView="approvals" dataVersion={dataVersion} />}
+        <Suspense fallback={
+          <div className="flex items-center justify-center p-20">
+            <Loader2 className="animate-spin text-white/50" size={32} />
+          </div>
+        }>
+          {view === 'home' && (
+            madrasah?.is_super_admin ? <AdminPanel lang={lang} currentView="list" dataVersion={dataVersion} /> : 
+            <Home 
+              onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} 
+              setView={navigateTo}
+              lang={lang} 
+              dataVersion={dataVersion} 
+              triggerRefresh={triggerRefresh}
+              madrasahId={madrasah?.id}
+              teacher={teacher}
+              madrasah={madrasah}
+            />
+          )}
+          
+          {view === 'classes' && <Classes onClassClick={(cls) => { setSelectedClass(cls); setView('students'); }} lang={lang} madrasah={madrasah} dataVersion={dataVersion} triggerRefresh={triggerRefresh} readOnly={!!teacher && !teacher.permissions.can_manage_classes} />}
+          {view === 'students' && selectedClass && <Students selectedClass={selectedClass} onStudentClick={(s) => { setSelectedStudent(s); setView('student-details'); }} onAddClick={() => { setSelectedStudent(null); setIsEditing(false); setView('student-form'); }} onBack={() => setView('classes')} lang={lang} dataVersion={dataVersion} triggerRefresh={triggerRefresh} canAdd={!teacher || teacher.permissions.can_manage_students} canSendSMS={!teacher || (teacher.permissions.can_send_sms || teacher.permissions.can_send_free_sms)} teacher={teacher} madrasahId={madrasah?.id} onNavigateToWallet={() => setView('wallet-sms')} />}
+          {view === 'student-details' && selectedStudent && <StudentDetails student={selectedStudent} onEdit={() => { setIsEditing(true); setView('student-form'); }} onBack={() => setView(selectedClass ? 'students' : 'home')} lang={lang} readOnly={!!teacher && !teacher.permissions.can_manage_students} madrasahId={madrasah?.id} triggerRefresh={triggerRefresh} />}
+          {view === 'student-form' && <StudentForm student={selectedStudent} madrasah={madrasah} defaultClassId={selectedClass?.id} isEditing={isEditing} onSuccess={() => { triggerRefresh(); setView(selectedClass ? 'students' : 'home'); }} onCancel={() => setView(selectedStudent ? 'student-details' : (selectedClass ? 'students' : 'home'))} lang={lang} />}
+          {view === 'wallet-sms' && <WalletSMS lang={lang} madrasah={madrasah} triggerRefresh={triggerRefresh} dataVersion={dataVersion} />}
+          {view === 'teachers' && <Teachers lang={lang} madrasah={madrasah} onBack={() => setView('account')} />}
+          {view === 'data-management' && <DataManagement lang={lang} madrasah={madrasah} onBack={() => setView('account')} triggerRefresh={triggerRefresh} />}
+          {view === 'account' && <Account lang={lang} setLang={(l) => { setLang(l); localStorage.setItem('app_lang', l); }} onProfileUpdate={() => triggerRefresh()} setView={setView} isSuperAdmin={madrasah?.is_super_admin} initialMadrasah={madrasah} onLogout={logout} isTeacher={!!teacher} />}
+          {madrasah?.is_super_admin && view === 'admin-dashboard' && <AdminPanel lang={lang} currentView="dashboard" dataVersion={dataVersion} />}
+          {madrasah?.is_super_admin && view === 'admin-approvals' && <AdminPanel lang={lang} currentView="approvals" dataVersion={dataVersion} />}
+        </Suspense>
         
         <div className="mt-8 mb-4 text-center opacity-30 select-none">
            <span className="text-[9px] font-black text-white uppercase tracking-widest">{APP_VERSION}</span>

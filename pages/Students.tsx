@@ -26,6 +26,66 @@ const STATIC_DEFAULTS = [
   { id: 'def-2', title: 'অনুপস্থিতি (Absence)', body: 'আস-সালামু আলাইকুম, আজ আপনার সন্তান মাদরাসায় অনুপস্থিত। অনুগ্রহ করে কারণ জানান।' }
 ];
 
+// Memoized Student Card for performance
+const StudentCard = React.memo(({ 
+  student, 
+  isSelectionMode, 
+  isSelected, 
+  onToggle, 
+  onClick, 
+  onCall, 
+  onWhatsApp, 
+  lang 
+}: { 
+  student: Student, 
+  isSelectionMode: boolean, 
+  isSelected: boolean, 
+  onToggle: (id: string) => void, 
+  onClick: (student: Student) => void, 
+  onCall: (id: string, phone: string) => void, 
+  onWhatsApp: (id: string, phone: string) => void, 
+  lang: Language 
+}) => (
+  <div 
+    onClick={() => isSelectionMode ? onToggle(student.id) : onClick(student)}
+    className={`p-3 rounded-[1.2rem] border backdrop-blur-md transition-all flex items-center justify-between shadow-md relative overflow-hidden will-change-transform ${
+      isSelectionMode && isSelected ? 'bg-white text-[#8D30F4] border-[#8D30F4] scale-[1.01]' : 'bg-white/95 border-white/40 active:scale-[0.98]'
+    }`}
+  >
+    <div className="flex items-center gap-3.5 flex-1 min-w-0">
+      <div className="w-11 h-11 rounded-2xl flex flex-col items-center justify-center border shrink-0 bg-[#F2EBFF] border-[#8D30F4]/10 text-[#8D30F4] shadow-inner relative">
+        <span className="text-[7px] font-black opacity-40 uppercase leading-none">{t('roll', lang)}</span>
+        <span className="text-base font-black leading-none mt-1">{student.roll || '-'}</span>
+        {isSelectionMode && (
+          <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? 'bg-[#8D30F4] text-white border-[#8D30F4]' : 'bg-slate-50 border-slate-100 text-slate-200'}`}>
+            <Check size={12} strokeWidth={3} />
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="font-black text-[#2E0B5E] text-[16px] font-noto truncate leading-tight">{student.student_name}</h3>
+        <p className="text-[9px] font-black text-[#A179FF] truncate uppercase tracking-widest mt-0.5">{student.guardian_name || '-'}</p>
+      </div>
+    </div>
+    {!isSelectionMode && (
+      <div className="flex items-center gap-6 shrink-0 ml-2">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onCall(student.id, student.guardian_phone); }} 
+          className="w-10 h-10 bg-[#8D30F4]/10 text-[#8D30F4] rounded-xl active:scale-90 transition-all border border-[#8D30F4]/10 flex items-center justify-center shadow-sm"
+        >
+          <Phone size={18} fill="currentColor" />
+        </button>
+        <button 
+          onClick={(e) => { e.stopPropagation(); onWhatsApp(student.id, student.guardian_phone); }} 
+          className="w-10 h-10 bg-[#25d366] text-white rounded-xl shadow-lg active:scale-90 transition-all flex items-center justify-center border border-white/20"
+        >
+          <PhoneCall size={18} fill="currentColor" />
+        </button>
+      </div>
+    )}
+  </div>
+));
+
 const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAddClick, onBack, lang, dataVersion, triggerRefresh, canAdd, canSendSMS, teacher, madrasahId, onNavigateToWallet }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +141,8 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
       try {
         const { data } = await supabase
           .from('students')
-          .select('*, classes(*)').eq('madrasah_id', madrasahId)
+          .select('id, student_name, guardian_name, guardian_phone, roll, class_id, madrasah_id')
+          .eq('madrasah_id', madrasahId)
           .eq('class_id', selectedClass.id)
           .order('roll', { ascending: true, nullsFirst: false });
         if (data) setStudents(data);
@@ -218,34 +279,17 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
 
       <div className="grid grid-cols-1 gap-2">
         {filteredStudents.map(student => (
-          <div key={student.id} onClick={() => isSelectionMode ? toggleSelection(student.id) : onStudentClick(student)}
-            className={`p-3 rounded-[1.2rem] border backdrop-blur-md transition-all flex items-center justify-between shadow-md relative overflow-hidden ${isSelectionMode && selectedIds.has(student.id) ? 'bg-white text-[#8D30F4] border-[#8D30F4] scale-[1.01]' : 'bg-white/95 border-white/40 active:scale-[0.98]'}`}>
-            <div className="flex items-center gap-3.5 flex-1 min-w-0">
-              <div className="w-11 h-11 rounded-2xl flex flex-col items-center justify-center border shrink-0 bg-[#F2EBFF] border-[#8D30F4]/10 text-[#8D30F4] shadow-inner relative">
-                <span className="text-[7px] font-black opacity-40 uppercase leading-none">{t('roll', lang)}</span>
-                <span className="text-base font-black leading-none mt-1">{student.roll || '-'}</span>
-                {isSelectionMode && (
-                  <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all ${selectedIds.has(student.id) ? 'bg-[#8D30F4] text-white border-[#8D30F4]' : 'bg-slate-50 border-slate-100 text-slate-200'}`}>
-                    <Check size={12} strokeWidth={3} />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-black text-[#2E0B5E] text-[16px] font-noto truncate leading-tight">{student.student_name}</h3>
-                <p className="text-[9px] font-black text-[#A179FF] truncate uppercase tracking-widest mt-0.5">{student.guardian_name || '-'}</p>
-              </div>
-            </div>
-            {!isSelectionMode && (
-              <div className="flex items-center gap-6 shrink-0 ml-2">
-                <button onClick={(e) => { e.stopPropagation(); initiateNormalCall(student.id, student.guardian_phone); }} className="w-10 h-10 bg-[#8D30F4]/10 text-[#8D30F4] rounded-xl active:scale-90 transition-all border border-[#8D30F4]/10 flex items-center justify-center shadow-sm">
-                  <Phone size={18} fill="currentColor" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); initiateWhatsAppCall(student.id, student.guardian_phone); }} className="w-10 h-10 bg-[#25d366] text-white rounded-xl shadow-lg active:scale-90 transition-all flex items-center justify-center border border-white/20">
-                  <PhoneCall size={18} fill="currentColor" />
-                </button>
-              </div>
-            )}
-          </div>
+          <StudentCard
+            key={student.id}
+            student={student}
+            isSelectionMode={isSelectionMode}
+            isSelected={selectedIds.has(student.id)}
+            onToggle={toggleSelection}
+            onClick={onStudentClick}
+            onCall={initiateNormalCall}
+            onWhatsApp={initiateWhatsAppCall}
+            lang={lang}
+          />
         ))}
       </div>
 
