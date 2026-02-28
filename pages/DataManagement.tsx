@@ -134,20 +134,61 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
       reader.onload = async (event) => {
         try {
           const data = event.target?.result;
-          const workbook = XLSX.read(data, { type: 'binary' });
+          if (!data) throw new Error("Failed to read file");
+          
+          const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 'A' }) as any[];
 
+          // Skip header row
           const rows = jsonData.slice(1);
-          if (rows.length === 0) throw new Error("File is empty");
+          if (rows.length === 0) throw new Error(lang === 'bn' ? "ফাইলটি খালি" : "File is empty");
 
-          let successCount = 0;
+          // 1. Get all unique class names from the file
+          const uniqueClassNames = Array.from(new Set(rows
+            .map(row => String(row.A || '').trim())
+            .filter(name => name !== '')
+          ));
+
+          // 2. Fetch existing classes
+          const { data: existingClasses, error: fetchClassesError } = await supabase
+            .from('classes')
+            .select('id, class_name')
+            .eq('madrasah_id', madrasah.id);
+
+          if (fetchClassesError) throw fetchClassesError;
+
+          const classMap = new Map<string, string>();
+          existingClasses?.forEach(c => classMap.set(c.class_name, c.id));
+
+          // 3. Create missing classes
+          const missingClasses = uniqueClassNames.filter(name => !classMap.has(name));
+          if (missingClasses.length > 0) {
+            const { data: newClasses, error: insertClassesError } = await supabase
+              .from('classes')
+              .insert(missingClasses.map(name => ({ madrasah_id: madrasah.id, class_name: name })))
+              .select('id, class_name');
+
+            if (insertClassesError) throw insertClassesError;
+            newClasses?.forEach(c => classMap.set(c.class_name, c.id));
+          }
+
+          // 4. Fetch existing students to avoid duplicates
+          const { data: existingStudents, error: fetchStudentsError } = await supabase
+            .from('students')
+            .select('student_name, roll, class_id')
+            .eq('madrasah_id', madrasah.id);
+
+          if (fetchStudentsError) throw fetchStudentsError;
+
+          const studentSet = new Set(existingStudents?.map(s => `${s.class_id}-${s.student_name}-${s.roll || 'null'}`));
+
+          // 5. Prepare students for batch insert
+          const studentsToInsert: any[] = [];
           let skippedCount = 0;
-          let total = rows.length;
 
-          for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
+          for (const row of rows) {
             const className = String(row.A || '').trim();
             const rollValue = parseInt(row.B);
             const roll = isNaN(rollValue) ? null : rollValue;
@@ -161,69 +202,49 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
               continue;
             }
 
-            let classId = '';
-            const { data: existingClass } = await supabase
-              .from('classes')
-              .select('id')
-              .eq('madrasah_id', madrasah.id)
-              .eq('class_name', className)
-              .maybeSingle();
-
-            if (existingClass) {
-              classId = existingClass.id;
-            } else {
-              const { data: newClass, error: classError } = await supabase
-                .from('classes')
-                .insert({ madrasah_id: madrasah.id, class_name: className })
-                .select('id')
-                .single();
-              if (classError) {
-                skippedCount++;
-                continue;
-              }
-              classId = newClass.id;
-            }
-
-            // Check if student already exists in this class with same name and roll
-            let studentQuery = supabase
-              .from('students')
-              .select('id')
-              .eq('madrasah_id', madrasah.id)
-              .eq('class_id', classId)
-              .eq('student_name', studentName);
-            
-            if (roll === null) {
-              studentQuery = studentQuery.is('roll', null);
-            } else {
-              studentQuery = studentQuery.eq('roll', roll);
-            }
-
-            const { data: existingStudent } = await studentQuery.maybeSingle();
-
-            if (existingStudent) {
+            const classId = classMap.get(className);
+            if (!classId) {
               skippedCount++;
-              setProgress(Math.round(((i + 1) / total) * 100));
               continue;
             }
 
-            const { error: studentError } = await supabase
-              .from('students')
-              .insert({
-                madrasah_id: madrasah.id,
-                class_id: classId,
-                student_name: studentName,
-                roll: roll,
-                guardian_name: guardianName || null,
-                guardian_phone: phone,
-                guardian_phone_2: phone2 || null
-              });
-
-            if (!studentError) {
-              successCount++;
-            } else {
+            const studentKey = `${classId}-${studentName}-${roll || 'null'}`;
+            if (studentSet.has(studentKey)) {
               skippedCount++;
+              continue;
             }
-            setProgress(Math.round(((i + 1) / total) * 100));
+
+            studentsToInsert.push({
+              madrasah_id: madrasah.id,
+              class_id: classId,
+              student_name: studentName,
+              roll: roll,
+              guardian_name: guardianName || null,
+              guardian_phone: phone,
+              guardian_phone_2: phone2 || null
+            });
+          }
+
+          // 6. Batch insert students
+          let successCount = 0;
+          if (studentsToInsert.length > 0) {
+            // Insert in chunks of 50 to avoid payload size limits
+            const chunkSize = 50;
+            for (let i = 0; i < studentsToInsert.length; i += chunkSize) {
+              const chunk = studentsToInsert.slice(i, i + chunkSize);
+              const { error: insertError } = await supabase
+                .from('students')
+                .insert(chunk);
+
+              if (insertError) {
+                console.error("Batch insert error:", insertError);
+                // If chunk fails, we could try individual inserts or just count as skipped
+                skippedCount += chunk.length;
+              } else {
+                successCount += chunk.length;
+              }
+              setProgress(Math.round(((i + chunk.length) / studentsToInsert.length) * 100));
+            }
           }
 
           const msg = lang === 'bn' 
@@ -236,13 +257,20 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
           });
           triggerRefresh();
         } catch (err: any) {
-          setStatus({ type: 'error', message: err.message });
+          console.error("Import error:", err);
+          setStatus({ type: 'error', message: err.message || "Import failed" });
         } finally {
           setLoading(false);
           if (fileInputRef.current) fileInputRef.current.value = '';
         }
       };
-      reader.readAsBinaryString(file);
+
+      reader.onerror = () => {
+        setLoading(false);
+        setStatus({ type: 'error', message: "Failed to read file" });
+      };
+
+      reader.readAsArrayBuffer(file);
     } catch (err: any) {
       setLoading(false);
       setStatus({ type: 'error', message: err.message });
