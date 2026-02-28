@@ -139,15 +139,17 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 'A' }) as any[];
+          
+          // Use header: 1 to get an array of arrays for more robust parsing
+          const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
 
-          // Skip header row
-          const rows = jsonData.slice(1);
-          if (rows.length === 0) throw new Error(lang === 'bn' ? "ফাইলটি খালি" : "File is empty");
+          // Skip header row (index 0)
+          const dataRows = rows.slice(1).filter(row => row.length > 0);
+          if (dataRows.length === 0) throw new Error(lang === 'bn' ? "ফাইলটি খালি বা সঠিক ফরম্যাটে নেই" : "File is empty or invalid format");
 
           // 1. Get all unique class names from the file
-          const uniqueClassNames = Array.from(new Set(rows
-            .map(row => String(row.A || '').trim())
+          const uniqueClassNames = Array.from(new Set(dataRows
+            .map(row => String(row[0] || '').trim())
             .filter(name => name !== '')
           ));
 
@@ -160,7 +162,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
           if (fetchClassesError) throw fetchClassesError;
 
           const classMap = new Map<string, string>();
-          existingClasses?.forEach(c => classMap.set(c.class_name, c.id));
+          existingClasses?.forEach(c => classMap.set(c.class_name.trim(), c.id));
 
           // 3. Create missing classes
           const missingClasses = uniqueClassNames.filter(name => !classMap.has(name));
@@ -171,7 +173,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
               .select('id, class_name');
 
             if (insertClassesError) throw insertClassesError;
-            newClasses?.forEach(c => classMap.set(c.class_name, c.id));
+            newClasses?.forEach(c => classMap.set(c.class_name.trim(), c.id));
           }
 
           // 4. Fetch existing students to avoid duplicates
@@ -182,20 +184,20 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
 
           if (fetchStudentsError) throw fetchStudentsError;
 
-          const studentSet = new Set(existingStudents?.map(s => `${s.class_id}-${s.student_name}-${s.roll || 'null'}`));
+          const studentSet = new Set(existingStudents?.map(s => `${s.class_id}-${s.student_name.trim()}-${s.roll || 'null'}`));
 
           // 5. Prepare students for batch insert
           const studentsToInsert: any[] = [];
           let skippedCount = 0;
 
-          for (const row of rows) {
-            const className = String(row.A || '').trim();
-            const rollValue = parseInt(row.B);
+          for (const row of dataRows) {
+            const className = String(row[0] || '').trim();
+            const rollValue = parseInt(String(row[1] || ''));
             const roll = isNaN(rollValue) ? null : rollValue;
-            const studentName = String(row.C || '').trim();
-            const guardianName = String(row.D || '').trim();
-            const phone = String(row.E || '').trim();
-            const phone2 = String(row.F || '').trim();
+            const studentName = String(row[2] || '').trim();
+            const guardianName = String(row[3] || '').trim();
+            const phone = String(row[4] || '').trim();
+            const phone2 = String(row[5] || '').trim();
 
             if (!studentName || !phone || !className) {
               skippedCount++;
@@ -227,8 +229,9 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
 
           // 6. Batch insert students
           let successCount = 0;
+          let lastError = null;
+
           if (studentsToInsert.length > 0) {
-            // Insert in chunks of 50 to avoid payload size limits
             const chunkSize = 50;
             for (let i = 0; i < studentsToInsert.length; i += chunkSize) {
               const chunk = studentsToInsert.slice(i, i + chunkSize);
@@ -238,7 +241,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
 
               if (insertError) {
                 console.error("Batch insert error:", insertError);
-                // If chunk fails, we could try individual inserts or just count as skipped
+                lastError = insertError.message;
                 skippedCount += chunk.length;
               } else {
                 successCount += chunk.length;
@@ -247,9 +250,19 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
             }
           }
 
-          const msg = lang === 'bn' 
-            ? `${successCount} জন ছাত্র আপলোড হয়েছে, ${skippedCount} জন ইতিমধ্যে ছিল বা ত্রুটির কারণে বাদ পড়েছে।` 
-            : `${successCount} students imported, ${skippedCount} skipped (already exists or error).`;
+          let msg = lang === 'bn' 
+            ? `${successCount} জন ছাত্র আপলোড হয়েছে।` 
+            : `${successCount} students imported.`;
+          
+          if (skippedCount > 0) {
+            msg += lang === 'bn' 
+              ? ` ${skippedCount} জন বাদ পড়েছে (আগে থেকেই ছিল বা ত্রুটি)।` 
+              : ` ${skippedCount} skipped (duplicates or errors).`;
+          }
+
+          if (lastError && successCount === 0) {
+            throw new Error(lang === 'bn' ? `আপলোড ব্যর্থ: ${lastError}` : `Upload failed: ${lastError}`);
+          }
 
           setStatus({ 
             type: 'success', 
