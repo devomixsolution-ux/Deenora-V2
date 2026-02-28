@@ -60,6 +60,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion,
               id,
               student_name,
               guardian_phone,
+              guardian_phone_2,
               roll,
               photo_url,
               classes (

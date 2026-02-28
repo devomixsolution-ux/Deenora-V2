@@ -141,7 +141,7 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
       try {
         const { data } = await supabase
           .from('students')
-          .select('id, student_name, guardian_name, guardian_phone, roll, class_id, madrasah_id')
+          .select('id, student_name, guardian_name, guardian_phone, guardian_phone_2, roll, class_id, madrasah_id')
           .eq('madrasah_id', madrasahId)
           .eq('class_id', selectedClass.id)
           .order('roll', { ascending: true, nullsFirst: false });
