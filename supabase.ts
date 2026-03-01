@@ -127,16 +127,15 @@ export const smsApi = {
     const isUnicode = /[^\u0000-\u007F]/.test(message);
     const type = isUnicode ? 3 : 1;
     
-    // For Unicode (type=3), REVE SMS often requires Hex encoding of UTF-16BE
-    const encodedMessage = isUnicode 
-      ? Array.from(message).map(c => c.charCodeAt(0).toString(16).padStart(4, '0')).join('').toUpperCase()
-      : message;
+    // For sendBulk (JSON endpoint), we send plain text. The JSON stringify + encodeURIComponent 
+    // handles UTF-8 encoding which modern gateways support for JSON payloads.
+    // We only use Hex for the legacy /sendtext GET endpoint.
 
     const sendPromises = batches.map(async (toUsers) => {
       const content = [{
         callerID: callerId,
         toUser: toUsers,
-        messageContent: encodedMessage
+        messageContent: message
       }];
 
       let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=${type}&content=${encodeURIComponent(JSON.stringify(content))}`;
