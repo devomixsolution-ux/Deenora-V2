@@ -151,7 +151,7 @@ DECLARE
   v_is_unicode BOOLEAN;
 BEGIN
   v_student_count := array_length(p_student_ids, 1);
-  v_is_unicode := (length(p_message) != length(convert_to(p_message, 'LATIN1')));
+  v_is_unicode := p_message ~ '[^\x00-\x7F]';
 
   IF v_is_unicode THEN
     IF length(p_message) <= 70 THEN

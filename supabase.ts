@@ -124,17 +124,22 @@ export const smsApi = {
     }
 
     // 5. Fire SMS Requests
+    const isUnicode = /[^\u0000-\u007F]/.test(message);
+    const type = isUnicode ? 3 : 1;
+    
+    // For Unicode (type=3), REVE SMS often requires Hex encoding of UTF-16BE
+    const encodedMessage = isUnicode 
+      ? Array.from(message).map(c => c.charCodeAt(0).toString(16).padStart(4, '0')).join('').toUpperCase()
+      : message;
+
     const sendPromises = batches.map(async (toUsers) => {
-      // Documentation suggests for multi-contact with SAME content:
-      // content=[{"callerID":"...","toUser":"8801...,8801...","messageContent":"..."}]
       const content = [{
         callerID: callerId,
         toUser: toUsers,
-        messageContent: message
+        messageContent: encodedMessage
       }];
 
-      // type=3 is mandatory for Unicode/Bengali characters
-      let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=3&content=${encodeURIComponent(JSON.stringify(content))}`;
+      let apiUrl = `https://smpp.revesms.com:7790/send?apikey=${apiKey}&secretkey=${secretKey}&type=${type}&content=${encodeURIComponent(JSON.stringify(content))}`;
       
       if (clientId) {
         apiUrl += `&clientid=${clientId}`;
@@ -175,9 +180,14 @@ export const smsApi = {
     }
 
     const target = normalizePhone(phone);
+    const isUnicode = /[^\u0000-\u007F]/.test(message);
+    const type = isUnicode ? 3 : 1;
+    const encodedMessage = isUnicode 
+      ? Array.from(message).map(c => c.charCodeAt(0).toString(16).padStart(4, '0')).join('').toUpperCase()
+      : message;
     
     // Using /sendtext for single direct messages (more reliable for single pings)
-    let apiUrl = `https://smpp.revesms.com:7790/sendtext?apikey=${apiKey}&secretkey=${secretKey}&callerID=${callerId}&toUser=${target}&messageContent=${encodeURIComponent(message)}&type=3`;
+    let apiUrl = `https://smpp.revesms.com:7790/sendtext?apikey=${apiKey}&secretkey=${secretKey}&callerID=${callerId}&toUser=${target}&messageContent=${encodeURIComponent(encodedMessage)}&type=${type}`;
     
     if (clientId) apiUrl += `&clientid=${clientId}`;
     
