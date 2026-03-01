@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CreditCard, Loader2, Send, ChevronDown, BookOpen, Users, CheckCircle2, MessageSquare, Plus, Edit3, Trash2, Smartphone, X, Check, History, Zap, AlertTriangle, Clock, Save, AlertCircle } from 'lucide-react';
-import { supabase, smsApi } from '../supabase';
+import { supabase, smsApi, calculateSmsSegments } from '../supabase';
 import { SMSTemplate, Language, Madrasah, Class, Student, Transaction } from '../types';
 import { t } from '../translations';
 import { sortMadrasahClasses } from './Classes';
@@ -328,7 +328,7 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                     <div className="bg-white px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm flex items-center gap-1.5">
                        <span className="text-[10px] font-black text-[#8D30F4]">{bulkMessage.length}/500</span>
                        <div className="w-[1px] h-3 bg-slate-100"></div>
-                       <span className="text-[10px] font-black text-[#8D30F4]">{Math.ceil(bulkMessage.length / 70)} SMS</span>
+                       <span className="text-[10px] font-black text-[#8D30F4]">{calculateSmsSegments(bulkMessage)} SMS</span>
                     </div>
                   </div>
                 </div>
@@ -516,7 +516,7 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                     <div className="flex justify-between items-center px-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">মেসেজ বডি</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">{Math.ceil(tempBody.length / 70)} SMS ({tempBody.length}/500)</span>
+                        <span className="text-[9px] font-black text-[#8D30F4] uppercase tracking-widest">{calculateSmsSegments(tempBody)} SMS ({tempBody.length}/500)</span>
                       </div>
                     </div>
                     <textarea 

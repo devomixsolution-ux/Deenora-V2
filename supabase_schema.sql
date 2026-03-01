@@ -56,13 +56,18 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ৫. বাল্ক এসএমএস এর জন্য ব্যালেন্স আপডেট ফাংশন
-CREATE OR REPLACE FUNCTION send_bulk_sms_rpc(p_madrasah_id UUID, p_student_ids UUID[], p_message TEXT)
+CREATE OR REPLACE FUNCTION send_bulk_sms_rpc(p_madrasah_id UUID, p_student_ids UUID[], p_message TEXT, p_total_cost INTEGER DEFAULT NULL)
 RETURNS JSON AS $$
 DECLARE
   v_cost INTEGER;
   v_balance INTEGER;
 BEGIN
-  v_cost := array_length(p_student_ids, 1);
+  IF p_total_cost IS NOT NULL THEN
+    v_cost := p_total_cost;
+  ELSE
+    v_cost := array_length(p_student_ids, 1);
+  END IF;
+  
   SELECT sms_balance INTO v_balance FROM madrasahs WHERE id = p_madrasah_id;
   
   IF v_balance IS NULL OR v_balance < v_cost THEN

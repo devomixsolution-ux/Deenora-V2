@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, Plus, Search, CheckCircle2, MessageSquare, X, BookOpen, ChevronDown, Check, PhoneCall, Smartphone, Loader2, ListChecks, MessageCircle, Phone, AlertCircle, AlertTriangle, Zap } from 'lucide-react';
-import { supabase, offlineApi, smsApi } from '../supabase';
+import { supabase, offlineApi, smsApi, calculateSmsSegments } from '../supabase';
 import { Class, Student, Language, Teacher } from '../types';
 import { t } from '../translations';
 
@@ -341,7 +341,10 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
             
             <div className="flex items-center justify-center gap-2 pt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-[#8D30F4] animate-pulse"></div>
-              <p className="text-[10px] font-black text-[#8D30F4] uppercase tracking-[0.2em]">{selectedIds.size} {t('selected', lang)}</p>
+              <p className="text-[10px] font-black text-[#8D30F4] uppercase tracking-[0.2em]">
+                {selectedIds.size} {t('selected', lang)}
+                {selectedTemplate && ` • ${calculateSmsSegments(selectedTemplate.body)} SMS`}
+              </p>
             </div>
           </div>
         </div>

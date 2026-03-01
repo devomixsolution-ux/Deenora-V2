@@ -43,6 +43,24 @@ const normalizePhone = (phone: string): string => {
   return p;
 };
 
+/**
+ * Calculates the number of SMS segments for a given message.
+ * GSM (English): 160 chars for 1st, 153 for subsequent.
+ * Unicode (Bangla): 70 chars for 1st, 67 for subsequent.
+ */
+export const calculateSmsSegments = (message: string): number => {
+  const isUnicode = /[^\u0000-\u007F]/.test(message);
+  const len = message.length;
+  
+  if (isUnicode) {
+    if (len <= 70) return 1;
+    return Math.ceil(len / 67);
+  } else {
+    if (len <= 160) return 1;
+    return Math.ceil(len / 153);
+  }
+};
+
 export const smsApi = {
   getGlobalSettings: async () => {
     try {
@@ -91,15 +109,19 @@ export const smsApi = {
     if (!mData) throw new Error("মাদরাসা প্রোফাইল লোড করা যায়নি।");
     
     const balance = mData.sms_balance || 0;
-    if (balance < students.length) {
-      throw new Error(`ব্যালেন্স পর্যাপ্ত নয়। প্রয়োজন: ${students.length}, আছে: ${balance}`);
+    const segments = calculateSmsSegments(message);
+    const totalCost = students.length * segments;
+
+    if (balance < totalCost) {
+      throw new Error(`ব্যালেন্স পর্যাপ্ত নয়। প্রয়োজন: ${totalCost}, আছে: ${balance}`);
     }
 
     // 2. Deduct balance via RPC (Database transaction)
     const { data: rpcData, error: rpcError } = await supabase.rpc('send_bulk_sms_rpc', {
       p_madrasah_id: madrasahId,
       p_student_ids: students.map(s => s.id),
-      p_message: message
+      p_message: message,
+      p_total_cost: totalCost // Passing total cost to RPC
     });
 
     if (rpcError) throw new Error("ব্যালেন্স আপডেট করতে সমস্যা হয়েছে: " + rpcError.message);
