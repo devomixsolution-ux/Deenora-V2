@@ -131,7 +131,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, setView, lang, m
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-[16px] font-black text-white leading-[1.2] tracking-tight font-noto drop-shadow-md line-clamp-2">
-              {isSuperAdmin ? (lang === 'bn' ? 'সুপার অ্যাডমিন' : 'Super Admin') : (madrasah?.name || (lang === 'bn' ? 'মাদরাসা কন্টাক্ট' : 'Madrasah Contact'))}
+              {isSuperAdmin ? (lang === 'bn' ? 'সুপার অ্যাডমিন' : 'Super Admin') : (madrasah?.name || (lang === 'bn' ? 'Deenora App' : 'Deenora App'))}
             </h1>
             <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mt-1 drop-shadow-sm font-noto">
               {teacher ? t('teacher_portal', lang) : t('admin_portal', lang)}

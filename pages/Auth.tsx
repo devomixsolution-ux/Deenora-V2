@@ -16,7 +16,7 @@ const Auth: React.FC<AuthProps> = ({ lang }) => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [brandInfo, setBrandInfo] = useState({ name: 'মাদরাসা কন্টাক্ট' });
+  const [brandInfo, setBrandInfo] = useState({ name: 'Deenora App' });
 
   useEffect(() => {
     const name = localStorage.getItem('m_name');

@@ -1,5 +1,5 @@
 {
-  "name": "Deenora Contact App 2.0 (মাদরাসা কন্টাক্ট অ্যাপ)",
+  "name": "Deenora App",
   "description": "A professional contact management system for Madrasahs in Bangladesh with REVE SMS integration.",
   "requestFramePermissions": [
     "camera",

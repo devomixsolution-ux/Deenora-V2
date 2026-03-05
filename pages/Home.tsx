@@ -201,7 +201,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion,
           {lang === 'bn' ? 'আস-সালামু আলাইকুম' : 'As-Salamu Alaikum'}
         </h1>
         <p className="text-[11px] font-black text-white/70 uppercase tracking-[0.2em] mt-1 drop-shadow-sm">
-          {teacher ? teacher.name : (madrasah?.name || (lang === 'bn' ? 'মাদরাসা কন্টাক্ট' : 'Madrasah Contact'))}
+          {teacher ? teacher.name : (madrasah?.name || (lang === 'bn' ? 'Deenora App' : 'Deenora App'))}
         </p>
       </div>
 
