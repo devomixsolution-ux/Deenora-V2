@@ -214,7 +214,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion,
           <input
             type="text"
             placeholder={t('search_placeholder', lang)}
-            className="w-full h-16 pl-16 pr-14 bg-white/95 backdrop-blur-2xl border border-white/50 rounded-[2rem] outline-none text-[#2E0B5E] placeholder:text-[#9B6DFF]/60 font-bold text-base shadow-[0_15px_40px_-10px_rgba(46,11,94,0.2)] focus:shadow-[0_20px_60px_-10px_rgba(141,48,244,0.3)] focus:border-[#8D30F4]/30 transition-all duration-300"
+            className="w-full h-16 pl-16 pr-14 bg-white border border-slate-100 rounded-[2rem] outline-none text-[#2E0B5E] placeholder:text-[#9B6DFF]/60 font-bold text-base shadow-sm focus:shadow-md focus:border-[#8D30F4]/30 transition-all duration-300"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -235,7 +235,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion,
             {loadingSearch ? (lang === 'bn' ? 'খোঁজা হচ্ছে...' : 'Searching...') : (lang === 'bn' ? 'সার্চ ফলাফল' : 'Search Results')}
           </h2>
           {searchResults.map(student => (
-            <div key={student.id} onClick={() => onStudentClick(student)} className="bg-white/95 p-4 rounded-[1.8rem] border-l-4 border-l-[#8D30F4] border border-white/40 flex items-center justify-between shadow-xl active:scale-[0.98] transition-all group backdrop-blur-lg">
+            <div key={student.id} onClick={() => onStudentClick(student)} className="bg-white p-4 rounded-[1.8rem] border-l-4 border-l-[#8D30F4] border border-slate-100 flex items-center justify-between shadow-md active:scale-[0.98] transition-all group">
               <div className="min-w-0 flex-1">
                 <h3 className="font-black text-[#4B168A] text-[16px] font-noto truncate leading-tight tracking-tight">{student.student_name}</h3>
                 <p className="text-[9px] text-[#A179FF] font-black uppercase mt-1 tracking-widest">{student.classes?.class_name || 'N/A'}</p>
@@ -294,7 +294,7 @@ const Home: React.FC<HomeProps> = ({ onStudentClick, setView, lang, dataVersion,
         ) : recentCalls.length > 0 ? (
           <div className="space-y-2.5">
             {recentCalls.slice(0, 20).map(call => (
-              <div key={call.id} onClick={() => call.students && onStudentClick(call.students)} className="bg-white/95 p-4 rounded-[1.8rem] border border-white/40 flex items-center justify-between shadow-xl active:scale-[0.98] transition-all group backdrop-blur-lg">
+              <div key={call.id} onClick={() => call.students && onStudentClick(call.students)} className="bg-white p-4 rounded-[1.8rem] border border-slate-100 flex items-center justify-between shadow-sm active:scale-[0.98] transition-all group">
                 <div className="flex items-center gap-4 min-w-0 flex-1">
                   <div className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 border border-slate-100 shadow-inner shrink-0">
                     <UserIcon size={20} />

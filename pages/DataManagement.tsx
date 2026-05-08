@@ -140,16 +140,22 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
           
-          // Use header: 1 to get an array of arrays for more robust parsing
-          const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+          // Use default sheet_to_json which maps to objects by header name
+          const dataRows = XLSX.utils.sheet_to_json(sheet) as any[];
 
-          // Skip header row (index 0)
-          const dataRows = rows.slice(1).filter(row => row.length > 0);
           if (dataRows.length === 0) throw new Error(lang === 'bn' ? "ফাইলটি খালি বা সঠিক ফরম্যাটে নেই" : "File is empty or invalid format");
+
+          // Helper to safely extract values from possible header names
+          const getValue = (row: any, keys: string[]) => {
+            for (const key of keys) {
+              if (row[key] !== undefined && row[key] !== null) return String(row[key]);
+            }
+            return '';
+          };
 
           // 1. Get all unique class names from the file
           const uniqueClassNames = Array.from(new Set(dataRows
-            .map(row => String(row[0] || '').trim())
+            .map(row => getValue(row, ['Class', 'class', 'শ্রেণি', 'শ্রেণী']).trim())
             .filter(name => name !== '')
           ));
 
@@ -191,13 +197,14 @@ const DataManagement: React.FC<DataManagementProps> = ({ lang, madrasah, onBack,
           let skippedCount = 0;
 
           for (const row of dataRows) {
-            const className = String(row[0] || '').trim();
-            const rollValue = parseInt(String(row[1] || ''));
+            const className = getValue(row, ['Class', 'class', 'শ্রেণি', 'শ্রেণী']).trim();
+            const rollRaw = getValue(row, ['Roll', 'roll', 'রোল']);
+            const rollValue = parseInt(rollRaw);
             const roll = isNaN(rollValue) ? null : rollValue;
-            const studentName = String(row[2] || '').trim();
-            const guardianName = String(row[3] || '').trim();
-            const phone = String(row[4] || '').trim();
-            const phone2 = String(row[5] || '').trim();
+            const studentName = getValue(row, ['Student Name', 'student_name', 'Student name', 'নাম', 'ছাত্রের নাম']).trim();
+            const guardianName = getValue(row, ['Guardian Name', 'guardian_name', 'Guardian name', 'পিতার নাম', 'অভিভাবকের নাম']).trim();
+            const phone = getValue(row, ['Phone 1', 'Guardian Phone', 'phone', 'মোবাইল', 'ফোন']).trim();
+            const phone2 = getValue(row, ['Phone 2', 'Guardian Phone 2', 'phone2', 'মোবাইল ২', 'ফোন ২']).trim();
 
             if (!studentName || !phone || !className) {
               skippedCount++;

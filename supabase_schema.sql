@@ -7,6 +7,14 @@ BEGIN
   END IF;
 END $$;
 
+-- ১.১ Students টেবিলে guardian_phone_2 কলাম যোগ করা
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='students' AND COLUMN_NAME='guardian_phone_2') THEN
+    ALTER TABLE public.students ADD COLUMN guardian_phone_2 TEXT;
+  END IF;
+END $$;
+
 -- ২. Transactions টেবিলে sms_count কলাম যোগ করা
 DO $$ 
 BEGIN 
@@ -82,5 +90,17 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql;
 
--- ৬. ইনডেক্স তৈরি (পারফরম্যান্স এর জন্য)
-CREATE INDEX IF NOT EXISTS idx_students_madrasah ON public.students(madrasah_id);
+-- ৭. নতুন ইউজার তৈরি হলে অটোমেটিক Madrasahs টেবিলে এন্ট্রি করার Trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.madrasahs (id, name, is_super_admin)
+  VALUES (new.id, new.email, false);
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

@@ -93,7 +93,7 @@ const Auth: React.FC<AuthProps> = ({ lang }) => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-white font-noto leading-tight drop-shadow-xl">
-              {brandInfo.name}
+              Deenora App
             </h1>
             <p className="text-white font-black text-[10px] uppercase tracking-[0.4em] mt-2 opacity-80 drop-shadow-md">Secure Portal Login</p>
           </div>

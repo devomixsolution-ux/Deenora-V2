@@ -224,7 +224,7 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                   <div className="flex justify-center py-10"><Loader2 className="animate-spin text-white" size={30} /></div>
                ) : templates.length > 0 ? (
                   templates.map(tmp => (
-                    <div key={tmp.id} className="bg-white/95 backdrop-blur-md p-5 rounded-[2.2rem] border border-white/50 shadow-xl relative group">
+                    <div key={tmp.id} className="bg-white p-5 rounded-[2.2rem] border border-slate-100 shadow-sm relative group">
                        <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                              <div className="w-10 h-10 bg-[#8D30F4]/10 rounded-xl flex items-center justify-center text-[#8D30F4] border border-[#8D30F4]/10">
@@ -391,7 +391,7 @@ const WalletSMS: React.FC<WalletSMSProps> = ({ lang, madrasah, triggerRefresh, d
                 </h2>
                 <div className="space-y-2.5">
                   {userTransactions.length > 0 ? userTransactions.map(tr => (
-                    <div key={tr.id} className="bg-white/95 backdrop-blur-md p-4 rounded-[1.8rem] border border-white flex items-center justify-between shadow-xl">
+                    <div key={tr.id} className="bg-white p-4 rounded-[1.8rem] border border-slate-100 flex items-center justify-between shadow-sm">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <p className="text-[15px] font-black text-slate-800 leading-none">{tr.amount} ৳</p>

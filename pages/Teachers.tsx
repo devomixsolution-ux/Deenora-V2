@@ -188,7 +188,7 @@ const Teachers: React.FC<TeachersProps> = ({ lang, madrasah, onBack }) => {
         ) : (
           <div className="space-y-3.5 px-1">
             {teachers.map(t => (
-              <div key={t.id} className="bg-white/95 backdrop-blur-md p-4 sm:p-6 rounded-[2.5rem] border border-white/50 shadow-xl relative overflow-hidden group">
+              <div key={t.id} className="bg-white p-4 sm:p-6 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
                  <div className="flex items-start sm:items-center justify-between mb-4 gap-2">
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#F2EBFF] text-[#8D30F4] rounded-[1.2rem] sm:rounded-[1.5rem] flex items-center justify-center border border-[#8D30F4]/10 shadow-inner shrink-0">

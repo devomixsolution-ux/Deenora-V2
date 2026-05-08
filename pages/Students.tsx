@@ -48,8 +48,8 @@ const StudentCard = React.memo(({
 }) => (
   <div 
     onClick={() => isSelectionMode ? onToggle(student.id) : onClick(student)}
-    className={`p-3 rounded-[1.2rem] border backdrop-blur-md transition-all flex items-center justify-between shadow-md relative overflow-hidden will-change-transform ${
-      isSelectionMode && isSelected ? 'bg-white text-[#8D30F4] border-[#8D30F4] scale-[1.01]' : 'bg-white/95 border-white/40 active:scale-[0.98]'
+    className={`p-3 rounded-[1.2rem] border transition-all flex items-center justify-between shadow-sm relative overflow-hidden will-change-transform ${
+      isSelectionMode && isSelected ? 'bg-white text-[#8D30F4] border-[#8D30F4] scale-[1.01]' : 'bg-white border-slate-100 active:scale-[0.98]'
     }`}
   >
     <div className="flex items-center gap-3.5 flex-1 min-w-0">
@@ -162,12 +162,6 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
     } catch (e) { console.error("recordCall Error:", e); }
   };
 
-  const toggleSelection = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) newSelected.delete(id); else newSelected.add(id);
-    setSelectedIds(newSelected);
-  };
-
   const toggleSelectAll = () => {
     const newSelected = new Set(selectedIds);
     if (allFilteredSelected) {
@@ -210,6 +204,12 @@ const Students: React.FC<StudentsProps> = ({ selectedClass, onStudentClick, onAd
         message: err.message
       });
     } finally { setSending(false); }
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) newSelected.delete(id); else newSelected.add(id);
+    setSelectedIds(newSelected);
   };
 
   const initiateNormalCall = async (studentId: string, phone: string) => {

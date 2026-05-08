@@ -117,9 +117,17 @@ export const smsApi = {
     }
 
     // 2. Deduct balance via RPC (Database transaction)
+    // Pad the p_student_ids array so that its length equals totalCost.
+    // This is a safety measure: if the user's database still runs the old send_bulk_sms_rpc
+    // which ignores p_total_cost and uses array_length(p_student_ids), it will still deduct correctly.
+    const paddedStudentIds = students.map(s => s.id);
+    while (paddedStudentIds.length < totalCost) {
+      paddedStudentIds.push(students[0].id);
+    }
+
     const { data: rpcData, error: rpcError } = await supabase.rpc('send_bulk_sms_rpc', {
       p_madrasah_id: madrasahId,
-      p_student_ids: students.map(s => s.id),
+      p_student_ids: paddedStudentIds,
       p_message: message,
       p_total_cost: totalCost // Passing total cost to RPC
     });

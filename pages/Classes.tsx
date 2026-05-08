@@ -45,7 +45,7 @@ const ClassCard = React.memo(({
 }) => (
   <div 
     onClick={() => onClassClick(cls)} 
-    className="bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-[2.2rem] border border-white/40 flex items-center justify-between active:scale-[0.98] transition-all group shadow-lg relative overflow-hidden will-change-transform"
+    className="bg-white p-4 sm:p-5 rounded-[2.2rem] border border-slate-100 flex items-center justify-between active:scale-[0.98] transition-all group shadow-sm relative overflow-hidden will-change-transform"
   >
     <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
       <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#8D30F4]/10 rounded-2xl flex items-center justify-center text-[#8D30F4] shrink-0 border border-[#8D30F4]/10 shadow-inner">
