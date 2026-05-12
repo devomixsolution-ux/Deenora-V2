@@ -4,17 +4,16 @@ import { supabase, offlineApi } from './supabase';
 import Auth from './pages/Auth';
 import Layout from './components/Layout';
 
-// Lazy load pages for better performance
-const Home = lazy(() => import('./pages/Home'));
-const Classes = lazy(() => import('./pages/Classes'));
-const Students = lazy(() => import('./pages/Students'));
-const StudentDetails = lazy(() => import('./pages/StudentDetails'));
-const StudentForm = lazy(() => import('./pages/StudentForm'));
-const Account = lazy(() => import('./pages/Account'));
-const AdminPanel = lazy(() => import('./pages/AdminPanel'));
-const WalletSMS = lazy(() => import('./pages/WalletSMS'));
-const DataManagement = lazy(() => import('./pages/DataManagement'));
-const Teachers = lazy(() => import('./pages/Teachers'));
+import Home from './pages/Home';
+import Classes from './pages/Classes';
+import Students from './pages/Students';
+import StudentDetails from './pages/StudentDetails';
+import StudentForm from './pages/StudentForm';
+import Account from './pages/Account';
+import AdminPanel from './pages/AdminPanel';
+import WalletSMS from './pages/WalletSMS';
+import DataManagement from './pages/DataManagement';
+import Teachers from './pages/Teachers';
 
 import { View, Class, Student, Language, Madrasah, Teacher } from './types';
 import { WifiOff, Loader2, RefreshCw, AlertTriangle, LogOut, CheckCircle, BookOpen, ShieldCheck, Zap, Sparkles, ShieldAlert, Phone, CloudOff, Layers, Fingerprint, SignalLow, PhoneCall } from 'lucide-react';
@@ -359,11 +358,6 @@ const App: React.FC = () => {
         madrasah={madrasah}
         teacher={teacher}
       >
-        <Suspense fallback={
-          <div className="flex items-center justify-center p-20">
-            <Loader2 className="animate-spin text-white/50" size={32} />
-          </div>
-        }>
           {view === 'home' && (
             madrasah?.is_super_admin ? <AdminPanel lang={lang} currentView="list" dataVersion={dataVersion} /> : 
             <Home 
@@ -388,7 +382,6 @@ const App: React.FC = () => {
           {view === 'account' && <Account lang={lang} setLang={(l) => { setLang(l); localStorage.setItem('app_lang', l); }} onProfileUpdate={() => triggerRefresh()} setView={setView} isSuperAdmin={madrasah?.is_super_admin} initialMadrasah={madrasah} onLogout={logout} isTeacher={!!teacher} />}
           {madrasah?.is_super_admin && view === 'admin-dashboard' && <AdminPanel lang={lang} currentView="dashboard" dataVersion={dataVersion} />}
           {madrasah?.is_super_admin && view === 'admin-approvals' && <AdminPanel lang={lang} currentView="approvals" dataVersion={dataVersion} />}
-        </Suspense>
         
         <div className="mt-8 mb-4 text-center opacity-30 select-none">
            <span className="text-[9px] font-black text-white uppercase tracking-widest">{APP_VERSION}</span>
